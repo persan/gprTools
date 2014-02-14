@@ -41,8 +41,8 @@ test:compile
 	bin/gprinfo -P gpr_tools --imported --basename -r >_recursive_imports.out
 	cmp _recursive_imports.out _recursive_imports.golden
 
-	bin/gprinfo -P gpr_tools --source-dirs-include --basename -r >_source_dirs_include.out
-	cmp _source_dirs_include.out _source_dirs_include.golden
+#	bin/gprinfo -P gpr_tools --source-dirs-include --basename -r >_source_dirs_include.out
+#	cmp _source_dirs_include.out _source_dirs_include.golden
 
 dist:test
 	if [[ ! -z `svn stat`  ]] ; then echo "Workfolder is not clean"; exit -1; fi
