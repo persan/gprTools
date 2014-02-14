@@ -1,0 +1,6 @@
+with "gnatcoll.gpr";
+with "missing1.gpr";
+project test_1 is
+
+
+end test_1;
