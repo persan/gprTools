@@ -35,19 +35,13 @@ test:compile
          fi )
 	cmp _missing.out _missing.golden
 
-	bin/gprinfo -P gpr_tools --imported --basename    >_direct_imports.out
+	bin/gprinfo -P gpr_tools --imports --basename    >_direct_imports.out
 	cmp _direct_imports.out _direct_imports.golden
 
-	bin/gprinfo -P gpr_tools --imported --basename -r >_recursive_imports.out
+	bin/gprinfo -P gpr_tools --imports --basename -r >_recursive_imports.out
 	cmp _recursive_imports.out _recursive_imports.golden
 
-#	bin/gprinfo -P gpr_tools --source-dirs-include --basename -r >_source_dirs_include.out
-#	cmp _source_dirs_include.out _source_dirs_include.golden
-
 dist:test
-	if [[ ! -z `svn stat`  ]] ; then echo "Workfolder is not clean"; exit -1; fi
-	( src=`svn info | grep "^URL" | cut -f 2 -d " "`; \
-          tgt=$$(dirname $${src})/tags/${project}-${VERSION} ;\
-          svn cp  $${src} $${tgt} "-mTag ${project}-${VERSION}";\
-          svn export $${tgt})
-	tar -czf ${project}-${VERSION}.tgz ${project}-${VERSION}
+	if [[ ! -z ` git status --porcelain`  ]] ; then echo "Workfolder is not clean"; exit -1; fi
+	git clone . ${project}-${VERSION}s
+	#tar -czf ${project}-${VERSION}.tgz ${project}-${VERSION}

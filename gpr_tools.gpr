@@ -1,7 +1,7 @@
 with "gnatcoll.gpr";
 project GPR_Tools is
 
-   Version := "1.0.3";
+   Version := "1.0.5";
 
    type Boolean is ("False","True");
    Development : Boolean := External("Development","True");
@@ -24,6 +24,7 @@ project GPR_Tools is
 
    package Compiler is
       for Driver("Makefile") use "";
+      for Driver("Project File") use "";
       for Driver("Text") use "";
       for Default_Switches("Ada") use ("-gnatwa","-gnatQ","-O2","-gnateDVERSION=""" & Version & """");
    end Compiler;
@@ -35,6 +36,7 @@ project GPR_Tools is
 
    package Naming is
       for Specification_Suffix("Text") use ".txt";
+      for Implementation_Suffix("Project File") use ".gpr";
       for Specification_Suffix("Makefile") use ".mk";
       for Specification_Exceptions("Makefile") use ("Makefile");
    end Naming;
