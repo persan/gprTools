@@ -42,6 +42,13 @@ test:compile
 	cmp _recursive_imports.out _recursive_imports.golden
 
 dist:test
-	if [[ ! -z ` git status --porcelain`  ]] ; then echo "Workfolder is not clean"; exit -1; fi
-	git clone . ${project}-${VERSION}s
-	#tar -czf ${project}-${VERSION}.tgz ${project}-${VERSION}
+	if [[ ! -z ` git status --porcelain`  ]] ; then \
+		echo "Workfolder is not clean";\
+		git status ;\
+		exit -1;\
+	fi
+	git tag ${project}-${VERSION}
+	git clone . ${project}-${VERSION}
+	rm ${project}-${VERSION}/.git -rf
+	tar -czf ${project}-${VERSION}.tgz ${project}-${VERSION}
+	rm ${project}-${VERSION}
