@@ -47,8 +47,13 @@ dist:test
 		git status ;\
 		exit -1;\
 	fi
-	git tag ${project}-${VERSION}
+	rm -rf ${project}-${VERSION} *.tgz
+	git tag ${project}-${VERSION} -f
 	git clone . ${project}-${VERSION}
 	rm ${project}-${VERSION}/.git -rf
 	tar -czf ${project}-${VERSION}.tgz ${project}-${VERSION}
-	rm ${project}-${VERSION}
+	rm ${project}-${VERSION} -rf
+
+
+
+

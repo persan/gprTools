@@ -5,3 +5,5 @@ bin/*
 Makefile.config
 *~
 *.db
+gpr_tools-*
+

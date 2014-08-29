@@ -2,6 +2,12 @@ gprTools
 ========
 Some handy commandline utilities for .gprfiles.
 
+Version: 1.0.5
+Added project iterators.
+
+Version: 1.0.4
+Build on Linux as well (end of line conventions)
+
 Version: 1.0.2
 More tests.
 
