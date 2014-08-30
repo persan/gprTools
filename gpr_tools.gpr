@@ -3,42 +3,33 @@ project GPR_Tools is
 
    Version := "1.0.5";
 
-   type Boolean is ("False","True");
-   Development : Boolean := External("Development","True");
+   for Languages use ("Ada", "Makefile", "Project File", "Text");
 
-   case Development is
-      when "True" =>  for Languages use ("Ada","Makefile","Project File","Text");
-      when "False" =>  for Languages use ("Ada");
-   end case;
-
-   for Source_Dirs use ("src",".");
+   for Source_Dirs use ("src", ".");
    for Object_Dir use ".obj";
    for Exec_Dir use "bin";
    for Main use ("gprinfo.adb",
                  "gpradd.adb");
 
-   case Development is
-      when "True" =>  for Main use Project'Main & ("version.adb");
-      when "False" =>  null;
-   end case;
 
    package Compiler is
-      for Driver("Makefile") use "";
-      for Driver("Project File") use "";
-      for Driver("Text") use "";
-      for Default_Switches("Ada") use ("-gnatwa","-gnatQ","-O2","-gnateDVERSION=""" & Version & """");
+      for Driver ("Makefile") use "";
+      for Driver ("Project File") use "";
+      for Driver ("Text") use "";
+      for Default_Switches ("Ada") use ("-gnatwa", "-gnatQ", "-O2", "-gnateDVERSION=""" & Version & """");
    end Compiler;
 
    package Binder is
-      for Default_Switches("Ada") use ("-t");
+      for Default_Switches ("Ada") use ("-t");
    end Binder;
 
 
    package Naming is
-      for Specification_Suffix("Text") use ".txt";
-      for Implementation_Suffix("Project File") use ".gpr";
-      for Specification_Suffix("Makefile") use ".mk";
-      for Specification_Exceptions("Makefile") use ("Makefile");
+      for Specification_Suffix ("Text") use ".txt";
+      for Specification_Exceptions ("Text") use ("README.md");
+      for Implementation_Suffix ("Project File") use ".gpr";
+      for Specification_Suffix ("Makefile") use ".mk";
+      for Specification_Exceptions ("Makefile") use ("Makefile");
    end Naming;
 
 end GPR_Tools;

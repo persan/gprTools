@@ -8,12 +8,8 @@ endif
 
 all:compile
 
-bin/version${EXE}: #IGNORE
-	gprbuild  -p -P ${project} version.adb
-
 Makefile.config : Makefile  bin/version${EXE} #IGNORE
 	echo PREFIX=$(dir $(shell dirname $(shell which gnatls))) >$@
-	echo VERSION=$(shell bin/version${EXE}) >>$@
 
 compile:
 	gprbuild  -s -p -P ${project}.gpr
@@ -21,6 +17,8 @@ compile:
 clean:
 	gprclean -P${project}.gpr
 	rm -rf Makefile.config gpr_tools-*
+	rm -rf `find * -name "*~"`
+
 install:
 	gprinstall -f -v -p -P ${project}.gpr --mode=usage  --prefix=${DESTDIR}${PREFIX} -XDevelopment=False
 
@@ -47,12 +45,13 @@ dist:test
 		git status ;\
 		exit -1;\
 	fi
-	rm -rf ${project}-${VERSION} *.tgz
-	git tag ${project}-${VERSION} -f
-	git clone . ${project}-${VERSION}
-	rm ${project}-${VERSION}/.git -rf
-	tar -czf ${project}-${VERSION}.tgz ${project}-${VERSION}
-	rm ${project}-${VERSION} -rf
+	rm -rf ${project}-$(shell bin/gprinfo --version) *.tgz
+
+	git tag ${project}-$(shell bin/gprinfo --version) -f
+	git clone . ${project}-$(shell bin/gprinfo --version)
+	rm ${project}-$(shell bin/gprinfo --version)/.git -rf
+	tar -czf ${project}-$(shell bin/gprinfo --version).tgz ${project}-$(shell bin/gprinfo --version)
+	rm ${project}-$(shell bin/gprinfo --version) -rf
 
 
 
