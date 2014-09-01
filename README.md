@@ -2,6 +2,10 @@ gprTools
 ========
 Some handy commandline utilities for .gprfiles.
 
+Version: 1.1.0
+- Added capability to echo/exec several commands.
+- Added multiple exclude patterns.
+
 Version: 1.0.5
 Added project iterators.
 
@@ -19,7 +23,7 @@ Initial Version
 
 gpr_tools:
 This project contains small utilities to make it simpler to work with
-.gpr files and makefiles in concert-
+.gpr files and makefiles in concert.
 The tool gprinfo displays various Attributes such as:
  - Source_Dirs
  - Main
@@ -28,5 +32,7 @@ The tool gprinfo displays various Attributes such as:
  - Languages
  - Imported projects
  - Missing imports.
- from projectfiles on standardoutput.
+ - Calculate buildorder for a .gpr project tree.
+ the results could ether be echod to standard outup and in
+ some cases executed direct.
 

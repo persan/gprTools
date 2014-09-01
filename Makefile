@@ -25,10 +25,12 @@ install:
 test:compile
 	bin/gprinfo -P ${project}.gpr --languages >_language_list.out
 	cmp _language_list.out _language_list.golden
+
 	bin/gprinfo -P test_1.gpr --missing >_missing.out
 	cmp _missing.out _missing.golden
 
 	@(if ( bin/gprinfo -P test_1.gpr --Missing >_missing.out ) ; then \
+	   echo "Not error exit.";\
            exit -1;\
          fi )
 	cmp _missing.out _missing.golden
@@ -52,6 +54,8 @@ dist:test
 	rm ${project}-$(shell bin/gprinfo --version)/.git -rf
 	tar -czf ${project}-$(shell bin/gprinfo --version).tgz ${project}-$(shell bin/gprinfo --version)
 	rm ${project}-$(shell bin/gprinfo --version) -rf
+
+
 
 
 

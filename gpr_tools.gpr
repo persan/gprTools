@@ -1,7 +1,7 @@
 with "gnatcoll.gpr";
 project GPR_Tools is
 
-   Version := "1.0.5";
+   Version := "1.1.0";
 
    for Languages use ("Ada", "Makefile", "Project File", "Text");
 
