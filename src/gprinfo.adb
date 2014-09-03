@@ -16,6 +16,9 @@ with Ada.Strings.Fixed.Equal_Case_Insensitive;
 with ada.Containers.Vectors;
 with Ada.Strings.Unbounded;
 with GNAT.String_Split;
+with Gnat.Exception_Traces;
+with GNAT.Traceback;
+with GNAT.Traceback.Symbolic;
 procedure Gprinfo is
 
    use Ada.Strings.Fixed;
@@ -78,11 +81,11 @@ procedure Gprinfo is
    function image (item : String_Vectors.Vector) return string is
       ret : ada.Strings.Unbounded.Unbounded_String;
    begin
-      for i in 1 .. item.Length loop
-         ada.Strings.Unbounded.append (ret, String_Vectors.Element (item, Natural (i)).all);
-         if i /= item.Length then
+      for i of item loop
+         if ada.Strings.Unbounded.length(ret) /= 0 then
             ada.Strings.Unbounded.append (ret, GNAT.OS_Lib.Path_Separator);
          end if;
+         ada.Strings.Unbounded.append (ret, i.all);
       end loop;
       return ada.Strings.Unbounded.To_String (ret);
    end;
@@ -321,15 +324,17 @@ procedure Gprinfo is
       Put_Line ("--exclude-pattern=regexp  Exclude project paths matching regexp.");
       Put_Line ("-v  --version             Print version and then exit.");
       Put_Line ("--verbose                 Be verbose.");
+      Put_Line ("--exceptions              Trace all exceptions.");
       Put_Line ("-? -h --help              Display this text.");
+
    end;
    procedure parse_command_line is
       opt : Character;
    begin
       loop
          Opt :=  getopt ("P= " &
-                           "AP=" &
-                           "aP=" &
+                           "AP= " &
+                           "aP= " &
                            "-dirname " &
                            "-basename " &
                            "m -missing " &
@@ -345,6 +350,7 @@ procedure Gprinfo is
                            "-gnatls= " &
                            "x? " &
                            "r -recursive " &
+                           "-reverse " &
                            "-echo= " &
                            "-exec= " &
                            "-cwd " &
@@ -355,6 +361,7 @@ procedure Gprinfo is
                            "-exclude-pattern " &
                            "v -verbose " &
                            "-version " &
+                           "-exceptions " &
                            "? h -help");
          case Opt is
             when ASCII.NUL => exit;
@@ -449,7 +456,11 @@ procedure Gprinfo is
                   Show_Version := True;
                elsif Full_Switch = "-verbose" then
                   Verbose := True;
-               elsif Full_Switch = "-Help" then
+               elsif Full_Switch = "-exceptions" then
+                  Gnat.Exception_Traces.Set_Trace_Decorator (GNAT.Traceback.Symbolic.Symbolic_Traceback'Access);
+                  Gnat.Exception_Traces.Trace_On (Gnat.Exception_Traces.Every_Raise);
+
+               elsif Full_Switch = "-help" then
                   Help := True;
                else
                   raise Program_Error with "invalid switch => '" & Full_Switch  & "'";
@@ -458,10 +469,14 @@ procedure Gprinfo is
                raise Program_Error with "invalid switch => '" & Full_Switch  & "'";
          end case;
       end loop;
+   exception
+      when GNAT.COMMAND_LINE.INVALID_SWITCH =>
+         GNAT.Io.Put_Line ("Invalid switch: " &  Full_Switch);
+         Print_Help;
+         raise;
    end;
 
 begin
-
    parse_command_line;
 
    if Help then
@@ -493,7 +508,6 @@ begin
       end;
    end if;
 
-   Env.Set_Path_From_Gnatls (Gnatls.all, GNAT_Version);
    declare
       realgnatls : GNAT.Strings.String_Access;
    begin
@@ -501,6 +515,8 @@ begin
       Rts_Root   := new String'(Containing_Directory (Containing_Directory (Realgnatls.all)));
       Free (Realgnatls);
    end;
+
+   Env.Set_Path_From_Gnatls (Gnatls.all, GNAT_Version, GNAT.Io.Put_Line'Access);
 
    --
    -- Locate the root-project
@@ -544,7 +560,5 @@ begin
       Display (Proj.Root_Project);
    end if;
 
-
    Ada.Command_Line.Set_Exit_Status (Exit_Status);
-
 end Gprinfo;
