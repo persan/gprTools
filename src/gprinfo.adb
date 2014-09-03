@@ -14,6 +14,8 @@ with GNAT.OS_Lib;
 with GNAT.Regexp;
 with Ada.Strings.Fixed.Equal_Case_Insensitive;
 with ada.Containers.Vectors;
+with Ada.Strings.Unbounded;
+with GNAT.String_Split;
 procedure Gprinfo is
 
    use Ada.Strings.Fixed;
@@ -27,19 +29,20 @@ procedure Gprinfo is
       cmd   : GNAT.Strings.String_Access;
    end record;
 
+   GPR_PROJECT_PATH_ORIG : constant GNAT.Strings.String_Access := GNAT.OS_Lib.Getenv ("GPR_PROJECT_PATH");
 
    package Command_Vectors is new Ada.Containers.Vectors (Natural, command_type);
    package String_Vectors is new Ada.Containers.Vectors (Natural, GNAT.Strings.String_Access);
 
-   Version                  : constant String := $VERSION;
-   GPR_Chiled_PATHS         : String_Vectors.Vector;
-   GPR_PATHS                : String_Vectors.Vector;
-   BaseName                 : Boolean := False;
-   Commands                 : Command_Vectors.Vector;
-   Cwd                      : Boolean := False;
-   DirName                  : Boolean := False;
-   Direct_Imports           : Boolean := False;
-   Displayed_Folders        : GNAT.Spitbol.Table_Boolean.Table (512);
+   GPR_PROJECT_PATH_LOCAL      : String_Vectors.Vector;
+   GPR_PROJECT_PATH_SUBPROCESS : String_Vectors.Vector;
+   Version                     : constant String := $VERSION;
+   BaseName                    : Boolean := False;
+   Commands                    : Command_Vectors.Vector;
+   Cwd                         : Boolean := False;
+   DirName                     : Boolean := False;
+   Direct_Imports              : Boolean := False;
+   Displayed_Folders           : GNAT.Spitbol.Table_Boolean.Table (512);
 
    Env                      : Project_Environment_Access;
    Exclude_Externally_Built : Boolean := True;
@@ -67,24 +70,33 @@ procedure Gprinfo is
    Source_Files             : Boolean := False;
    Verbose                  : Boolean := False;
    Exit_Status              : Ada.Command_Line.Exit_Status := Ada.Command_Line.Success;
+   Reverse_Order            : Boolean := False;
+   execute_Commands         : Boolean := False;
+   Max_Iterations           : Positive := 1;
+   Default_Max_Iterations   : constant := 16;
 
-
-
+   function image (item : String_Vectors.Vector) return string is
+      ret : ada.Strings.Unbounded.Unbounded_String;
+   begin
+      for i in 1 .. item.Length loop
+         ada.Strings.Unbounded.append (ret, String_Vectors.Element (item, Natural (i)).all);
+         if i /= item.Length then
+            ada.Strings.Unbounded.append (ret, GNAT.OS_Lib.Path_Separator);
+         end if;
+      end loop;
+      return ada.Strings.Unbounded.To_String (ret);
+   end;
 
    procedure Output (Full_Name : String;
                      Base_Name : String;
                      Dir_Name  : String;
                      Name      : String;
-                     missing   : String;
                      Continue  : out Boolean) is
 
-      Command                  : GNATCOLL.Arg_Lists.Arg_List;
-      Commands_Template        : GNATCOLL.Arg_Lists.Arg_List;
       Subst                    : GNATCOLL.Templates.Substitution_Array
         := ((new String'("full_name"), new String'(Full_Name)),
             (new String'("base_name"), new String'(Base_Name)),
             (new String'("dir_name"), new String'(Dir_Name)),
-            (new String'("missing"), new String'(missing)),
             (new String'("name"), new String'(Name)));
       Args                     : GNAT.OS_Lib.Argument_List_Access;
       Cmd                      : GNAT.OS_Lib.String_Access;
@@ -110,38 +122,42 @@ procedure Gprinfo is
       end loop;
 
       for c of Commands loop
+         declare
+            Command                  : GNATCOLL.Arg_Lists.Arg_List;
+            Commands_Template        : GNATCOLL.Arg_Lists.Arg_List;
+         begin
+            Commands_Template := GNATCOLL.Arg_Lists.Parse_String (c.cmd.all, Separate_Args);
+            for I in 0 .. Args_Length (Commands_Template) loop
+               Append_Argument (C        => Command,
+                                Argument => Substitute (Str        => Nth_Arg (Commands_Template, I),
+                                                        Substrings => Subst),
+                                Mode     => One_Arg);
+            end loop;
 
-         Commands_Template := GNATCOLL.Arg_Lists.Parse_String (c.cmd.all, Separate_Args);
-         for I in 0 .. Args_Length (Commands_Template) loop
-            Append_Argument (C        => Command,
-                             Argument => Substitute (Str        => Nth_Arg (Commands_Template, I),
-                                                     Substrings => Subst),
-                             Mode     => One_Arg);
-         end loop;
-
-         case c.kind is
-         when do_echo =>
-            GNAT.Io.Put_Line (GNATCOLL.Arg_Lists.To_Display_String (Command));
-         when do_exec =>
-            if Cwd then
-               if Verbose then
-                  GNAT.Io.Put_Line ("<cwd>  " & Dir_Name);
+            case c.kind is
+            when do_echo =>
+               GNAT.Io.Put_Line (GNATCOLL.Arg_Lists.To_Display_String (Command));
+            when do_exec =>
+               if Cwd then
+                  if Verbose then
+                     GNAT.Io.Put_Line ("<cwd>  " & Dir_Name);
+                  end if;
+                  Ada.Directories.Set_Directory (Dir_Name);
                end if;
-               Ada.Directories.Set_Directory (Dir_Name);
-            end if;
 
-            if Verbose then
-               GNAT.Io.Put_Line ("<exec> " & GNATCOLL.Arg_Lists.To_Display_String (Command));
-            end if;
+               if Verbose then
+                  GNAT.Io.Put_Line ("<exec> " & GNATCOLL.Arg_Lists.To_Display_String (Command));
+               end if;
 
-            Args := new GNAT.OS_Lib.Argument_List'(GNATCOLL.Arg_Lists.To_List (Command, False));
-            cmd := GNAT.OS_Lib.Locate_Exec_On_Path (GNATCOLL.Arg_Lists.Get_Command (Command));
-            if GNAT.OS_Lib.Spawn (Cmd.all, Args.all) /= 0 then
-               Continue := False;
-            end if;
-            Free (Cmd);
-            Free (Args);
-         end case;
+               Args := new GNAT.OS_Lib.Argument_List'(GNATCOLL.Arg_Lists.To_List (Command, False));
+               cmd := GNAT.OS_Lib.Locate_Exec_On_Path (GNATCOLL.Arg_Lists.Get_Command (Command));
+               if GNAT.OS_Lib.Spawn (Cmd.all, Args.all) /= 0 then
+                  Continue := False;
+               end if;
+               Free (Cmd);
+               Free (Args);
+            end case;
+         end;
       end loop;
       GNATCOLL.Templates.free (Subst);
    end Output;
@@ -200,9 +216,15 @@ procedure Gprinfo is
          Gnat.IO.Put_Line (+Full_Name (P.Library_Directory));
       elsif Recursive or Direct_Imports then
          declare
-            Iter     : Project_Iterator := P.Start (Recursive, Direct_Imports);
+            Iter     : Project_Iterator;
             Continue : Boolean;
          begin
+            if Reverse_Order then
+               Iter := P.Start_Reversed (Recursive, Direct_Imports);
+            else
+               Iter := P.Start (Recursive, Direct_Imports);
+            end if;
+
             loop
                exit when Current (Iter) = No_Project;
                if DirName then
@@ -221,7 +243,6 @@ procedure Gprinfo is
                           Base_Name => +Base_Name (Current (Iter).Project_Path),
                           Dir_Name  => +Dir_Name (Current (Iter).Project_Path),
                           Name      => Current (Iter).Name,
-                          Missing   => "",
                           Continue  => Continue);
 
                else
@@ -246,11 +267,10 @@ procedure Gprinfo is
             Exit_Status := ADA.Command_Line.Failure;
          end if;
          if Commands.length /= 0  then
-            Output (Full_Name => "",
+            Output (Full_Name => Msg (Matches (3).First .. Matches (3).Last),
                     Base_Name => Msg (Matches (2).First .. Matches (2).Last),
-                    Dir_Name  => "",
-                    Name      => "",
-                    Missing   => Msg (Matches (3).First .. Matches (3).Last),
+                    Dir_Name  => Msg (Matches (3).First .. Matches (3).Last),
+                    Name      => Msg (Matches (3).First .. Matches (3).Last),
                     Continue  => Continue);
          else
             GNAt.Io.Put_Line (Msg (Matches (3).First .. Matches (3).Last));
@@ -266,17 +286,20 @@ procedure Gprinfo is
    begin
       Put_Line ( "Displays various aspects of .gpr-project files. " & ASCII.LF &
                    "could also excute commands on the resulting project set." & ASCII.LF &
-                   "The usage usage is dual:" & ASCII.LF &
+                   "The usage usage is multiple:" & ASCII.LF &
                    " * Exctract aspects of a single project file to be used in scripts." & ASCII.LF &
-                   " * Iterate over project-trees." );
+                   " * Iterate over project-trees." & LF &
+                   " * Find missing projects in a project tree.");
 
       Put_Line ("-P={proj}                 Use Project File proj");
-      --      Put_Line ("-aP=dir                   Add directory dir to project search path (not propageted to subproceses).");
-      --      Put_Line ("-AP=dir                   Add directory dir to project search path (propageted to subproceses).");
+      Put_Line ("-aP=dir                   Add directory dir to project search path (not propageted to subproceses).");
+      Put_Line ("-Ap=dir                   Add directory dir to project search path (propageted to subproceses).");
+      Put_Line ("-AP=dir                   Add directory dir to project search path global.");
       Put_Line ("--dirname                 Show directorynames of projects.");
       Put_Line ("--basename                Show basenames of projects.");
-      Put_Line ("-m  --missing             Show missing projects.");
-      Put_Line ("-M  --Missing             Show missing projects (exit with error if not complete).");
+      Put_Line ("-m  --missing             Show missing projects substitution is %name is the missing file and %base_name is the importing file.");
+      Put_Line ("-M  --Missing             Show missing projects substitution same as in ""-m"" (exit with error if not complete).");
+      Put_Line ("-x{num}                   Repeats load of missing projects max ""num"" times (default is" & Default_Max_Iterations'Img & ") does only apply on ""-exec"".");
       Put_Line ("--exec-dir                Print exec dir.");
       Put_Line ("--object-dir              Print object dir.");
       Put_Line ("--source-dirs             Print source dirs.");
@@ -286,9 +309,10 @@ procedure Gprinfo is
       Put_Line ("--library-dir             Print library dir.");
       Put_Line ("--languages               Print project languages.");
       Put_Line ("--gnatls={gnatls}         Use as gnatls default=>'" & Gnatls.all & "' .");
-      Put_Line ("-r --recursive            Show recursive.");
-      Put_Line ("--echo=""command line""   Echo the argument with substitution %full_name %base_Name %dir_name %name %missing.");
-      Put_Line ("--exec=""command line""   Execute the argument with substitution %full_name %base_Name %dir_name %name %missing.");
+      Put_Line ("-r --recursive            Show recursive on all projects in tree in buildorder.");
+      Put_Line ("--reverse                 Show recursive on all projects in tree in reverse buildorder.");
+      Put_Line ("--echo=""command line""     Echo the argument with substitution %full_name %base_Name %dir_name %name.");
+      Put_Line ("--exec=""command line""     Execute the argument with substitution %full_name %base_Name %dir_name %name.");
       Put_Line ("--cwd                     Change dir to projects enclosing dir before executing command.");
       Put_Line ("--rts                     Include projects from runtimes.");
       Put_Line ("--externally-built        Include externally built procjects.");
@@ -319,6 +343,7 @@ procedure Gprinfo is
                            "-library-dir " &
                            "-languages " &
                            "-gnatls= " &
+                           "x? " &
                            "r -recursive " &
                            "-echo= " &
                            "-exec= " &
@@ -332,87 +357,103 @@ procedure Gprinfo is
                            "-version " &
                            "? h -help");
          case Opt is
-         when ASCII.NUL => exit;
-         when 'P' =>
-            Project_File := new string'(Parameter);
-         when 'a' =>
-            if Full_Switch = "aP" then
-               GPR_PATHS.Append (new String'(Parameter));
-            else
-               raise Program_Error with "invalid switch => '" & Full_Switch  & "'";
-            end if;
-         when 'A' =>
-            if Full_Switch = "AP" then
-               GPR_Chiled_PATHS.Append (new String'(Parameter));
-            else
-               raise Program_Error with "invalid switch => '" & Full_Switch  & "'";
-            end if;
-         when 'm' =>
-            Missing := True;
-         when 'M' =>
-            Missing_Fail := True;
-         when 'r' =>
-            Recursive  := True;
-         when 'v' =>
-            Recursive  := True;
-         when '?' | 'h' =>
-            help := true;
-         when '-' =>
-            if Full_Switch = "-dirname" then
-               DirName := True;
-            elsif Full_Switch = "-basename" then
-               BaseName := True;
-            elsif Full_Switch = "-missing" then
+            when ASCII.NUL => exit;
+            when 'P' =>
+               Project_File := new string'(Parameter);
+            when 'a' =>
+               if Full_Switch = "aP" then
+                  GPR_PROJECT_PATH_LOCAL.Append (new String'(Parameter));
+               else
+                  raise Program_Error with "invalid switch => '" & Full_Switch  & "'";
+               end if;
+            when 'A' =>
+               if Full_Switch = "Ap" then
+                  GPR_PROJECT_PATH_SUBPROCESS.Append (new String'(Parameter));
+               elsif Full_Switch = "AP" then
+                  GPR_PROJECT_PATH_LOCAL.Append (new String'(Parameter));
+                  GPR_PROJECT_PATH_SUBPROCESS.Append (new String'(Parameter));
+               else
+                  raise Program_Error with "invalid switch => '" & Full_Switch  & "'";
+               end if;
+            when 'm' =>
                Missing := True;
-            elsif Full_Switch = "-Missing" then
-               Missing := True;
+            when 'M' =>
                Missing_Fail := True;
-            elsif Full_Switch = "-object-dir" then
-               Object_Dir := True;
-            elsif Full_Switch = "-object-dir" then
-               Object_Dir := True;
-            elsif Full_Switch = "-source-dirs" then
-               Source_Dirs := True;
-            elsif Full_Switch = "-source-dirs-include" then
-               Source_Dirs_I := True;
-            elsif Full_Switch = "-source-files" then
-               Source_Files := True;
-            elsif Full_Switch = "-imports" then
-               Direct_Imports := True;
-            elsif Full_Switch = "-exec-dir" then
-               Exec_Dir := True;
-            elsif Full_Switch = "-library-dir" then
-               Library_Dir := True;
-            elsif Full_Switch = "-languages" then
-               Languages := True;
-            elsif Full_Switch = "-gnatls" then
-               Gnatls :=  new String'(Parameter);
-            elsif Full_Switch = "-cwd" then
-               cwd := True;
-            elsif Full_Switch = "-echo" then
-               Commands.Append ((do_echo, new String'(Parameter)));
-            elsif Full_Switch = "-exec" then
-               Commands.Append ((do_exec, new String'(Parameter)));
+            when 'r' =>
+               Recursive  := True;
+            when 'v' =>
+               Recursive  := True;
+            when 'x' =>
+               if parameter'length = 0 then
+                  Max_Iterations := Default_Max_Iterations;
+               else
+                  Max_Iterations := Integer'value (Parameter);
+               end if;
+            when '?' | 'h' =>
+               help := true;
+            when '-' =>
+               if Full_Switch = "-dirname" then
+                  DirName := True;
+               elsif Full_Switch = "-basename" then
+                  BaseName := True;
+               elsif Full_Switch = "-missing" then
+                  Missing := True;
+               elsif Full_Switch = "-Missing" then
+                  Missing := True;
+                  Missing_Fail := True;
+               elsif Full_Switch = "-object-dir" then
+                  Object_Dir := True;
+               elsif Full_Switch = "-object-dir" then
+                  Object_Dir := True;
+               elsif Full_Switch = "-source-dirs" then
+                  Source_Dirs := True;
+               elsif Full_Switch = "-source-dirs-include" then
+                  Source_Dirs_I := True;
+               elsif Full_Switch = "-source-files" then
+                  Source_Files := True;
+               elsif Full_Switch = "-imports" then
+                  Direct_Imports := True;
+               elsif Full_Switch = "-exec-dir" then
+                  Exec_Dir := True;
+               elsif Full_Switch = "-library-dir" then
+                  Library_Dir := True;
+               elsif Full_Switch = "-languages" then
+                  Languages := True;
+               elsif Full_Switch = "-gnatls" then
+                  Gnatls :=  new String'(Parameter);
 
-            elsif Full_Switch = "-rts" then
-               Exclude_RTS := False;
-            elsif Full_Switch = "-externally-built" then
-               Exclude_Externally_Built := False;
-            elsif Full_Switch = "-empty-sources" then
-               Exclude_No_Source := False;
-            elsif Full_Switch = "-exclude-pattern" then
-               Exclude_Patterns.append (new String'(Parameter));
-            elsif Full_Switch = "-no-duplicates" then
-               No_Duplicates := True;
-            elsif Full_Switch = "-version" then
-               Show_Version := True;
-            elsif Full_Switch = "-verbose" then
-               Verbose := True;
-            elsif Full_Switch = "-Help" then
-               Help := True;
-            else
-               raise Program_Error with "invalid switch => '" & Full_Switch  & "'";
-            end if;
+               elsif Full_Switch = "-reverse" then
+                  recursive := True;
+                  Reverse_Order := True;
+               elsif Full_Switch = "-recursive" then
+                  recursive := True;
+
+               elsif Full_Switch = "-cwd" then
+                  cwd := True;
+               elsif Full_Switch = "-echo" then
+                  Commands.Append ((do_echo, new String'(Parameter)));
+               elsif Full_Switch = "-exec" then
+                  Commands.Append ((do_exec, new String'(Parameter)));
+                  execute_Commands := True;
+               elsif Full_Switch = "-rts" then
+                  Exclude_RTS := False;
+               elsif Full_Switch = "-externally-built" then
+                  Exclude_Externally_Built := False;
+               elsif Full_Switch = "-empty-sources" then
+                  Exclude_No_Source := False;
+               elsif Full_Switch = "-exclude-pattern" then
+                  Exclude_Patterns.append (new String'(Parameter));
+               elsif Full_Switch = "-no-duplicates" then
+                  No_Duplicates := True;
+               elsif Full_Switch = "-version" then
+                  Show_Version := True;
+               elsif Full_Switch = "-verbose" then
+                  Verbose := True;
+               elsif Full_Switch = "-Help" then
+                  Help := True;
+               else
+                  raise Program_Error with "invalid switch => '" & Full_Switch  & "'";
+               end if;
             when others =>
                raise Program_Error with "invalid switch => '" & Full_Switch  & "'";
          end case;
@@ -431,7 +472,6 @@ begin
       return;
    end if;
 
-   Initialize (Env);
 
    if Direct_Imports then
       Recursive := True;
@@ -440,6 +480,19 @@ begin
    --
    -- Set up paths
    --
+   Initialize (Env);
+   if GPR_PROJECT_PATH_ORIG /= null and then GPR_PROJECT_PATH_ORIG.all /= "" then
+      declare
+         s : GNAT.String_Split.Slice_Set;
+      begin
+         GNAT.String_Split.Create (S, GPR_PROJECT_PATH_ORIG.all, GNAT.OS_Lib.Path_Separator & "", GNAT.String_Split.Multiple);
+         for i in 1 .. GNAT.String_Split.Slice_Count (s) loop
+            GPR_PROJECT_PATH_SUBPROCESS.Append (New STring'(GNAT.String_Split.Slice (s, i)));
+            GPR_PROJECT_PATH_LOCAL.Append (New STring'(GNAT.String_Split.Slice (s, i)));
+         end loop;
+      end;
+   end if;
+
    Env.Set_Path_From_Gnatls (Gnatls.all, GNAT_Version);
    declare
       realgnatls : GNAT.Strings.String_Access;
@@ -467,17 +520,27 @@ begin
    --
    -- Do the real work
    --
+   if GPR_PROJECT_PATH_LOCAL.length /= 0 then
+      GNAT.OS_Lib.Setenv ("GPR_PROJECT_PATH", image (GPR_PROJECT_PATH_LOCAL));
+   end if;
+
    if Missing or Missing_Fail then
-      begin
-         Proj.Load (Create (Filesystem_String (Project_File.all)), Env,
-                    Errors         => Handle_Error_Report'Unrestricted_Access,
-                    Recompute_View => False);
-      exception
-         when others   =>
-            null;
-      end;
+      Load_Loop : for i in  1 .. (if Execute_Commands then Max_Iterations else 1) loop
+         begin
+            Proj.Load (Create (Filesystem_String (Project_File.all)), Env,
+                       Errors         => Handle_Error_Report'Unrestricted_Access,
+                       Recompute_View => False);
+            exit load_Loop;
+         exception
+            when others   =>
+               null;
+         end;
+      end loop Load_Loop;
    else
       Proj.Load (Create (Filesystem_String (Project_File.all)), Env);
+      if GPR_PROJECT_PATH_SUBPROCESS.length /= 0 then
+         GNAT.OS_Lib.Setenv ("GPR_PROJECT_PATH", image (GPR_PROJECT_PATH_SUBPROCESS));
+      end if;
       Display (Proj.Root_Project);
    end if;
 

@@ -5,6 +5,7 @@ Some handy commandline utilities for .gprfiles.
 Version: 1.1.0
 - Added capability to echo/exec several commands.
 - Added multiple exclude patterns.
+- Iterate the project tree in buildorder and reverse buildorder.
 
 Version: 1.0.5
 Added project iterators.
