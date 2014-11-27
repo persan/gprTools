@@ -44,7 +44,7 @@ test:compile
 	bin/gprinfo -P gpr_tools --attribute=exec_dir >_attributes.out
 	bin/gprinfo -P gpr_tools --attribute=object_dir >>_attributes.out
 	bin/gprinfo -P gpr_tools --attribute=Source_Dirs >>_attributes.out
-	bin/gprinfo -P gpr_tools "--attribute=Compiler.Default_Switches(Ada)" >>_attributes.out
+	bin/gprinfo -P gpr_tools "--attribute=Binder.Default_Switches(Ada)" >>_attributes.out
 	@cmp _attributes.out _attributes.golden
 
 dist:test
