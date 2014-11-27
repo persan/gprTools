@@ -1,0 +1,4 @@
+bin
+.obj
+src .
+-gnatwa -gnatyyM256-s -gnatQ -O2 -gnateDVERSION="1.1.0"

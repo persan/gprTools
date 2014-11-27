@@ -24,22 +24,28 @@ install:
 
 test:compile
 	bin/gprinfo -P ${project}.gpr --languages >_language_list.out
-	cmp _language_list.out _language_list.golden
+	@cmp _language_list.out _language_list.golden
 
 	bin/gprinfo -P test_1.gpr --missing >_missing.out
-	cmp _missing.out _missing.golden
+	@cmp _missing.out _missing.golden
 
 	@(if ( bin/gprinfo -P test_1.gpr --Missing >_missing.out ) ; then \
 	   echo "Not error exit.";\
            exit -1;\
          fi )
-	cmp _missing.out _missing.golden
+	@cmp _missing.out _missing.golden
 
 	bin/gprinfo -P gpr_tools --imports --basename    >_direct_imports.out
-	cmp _direct_imports.out _direct_imports.golden
+	@cmp _direct_imports.out _direct_imports.golden
 
 	bin/gprinfo -P gpr_tools --imports --basename -r >_recursive_imports.out
-	cmp _recursive_imports.out _recursive_imports.golden
+	@cmp _recursive_imports.out _recursive_imports.golden
+
+	bin/gprinfo -P gpr_tools --attribute=exec_dir >_attributes.out
+	bin/gprinfo -P gpr_tools --attribute=object_dir >>_attributes.out
+	bin/gprinfo -P gpr_tools --attribute=Source_Dirs >>_attributes.out
+	bin/gprinfo -P gpr_tools "--attribute=Compiler.Default_Switches(Ada)" >>_attributes.out
+	@cmp _attributes.out _attributes.golden
 
 dist:test
 	if [[ ! -z ` git status --porcelain`  ]] ; then \
@@ -54,9 +60,3 @@ dist:test
 	rm ${project}-$(shell bin/gprinfo --version)/.git -rf
 	tar -czf ${project}-$(shell bin/gprinfo --version).tgz ${project}-$(shell bin/gprinfo --version)
 	rm ${project}-$(shell bin/gprinfo --version) -rf
-
-
-
-
-
-

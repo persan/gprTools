@@ -1,9 +1,9 @@
 with "gnatcoll.gpr";
 project GPR_Tools is
 
-   Version := "1.1.0";
+   Version := "1.2.0";
 
-   for Languages use ("Ada", "Makefile", "Project File", "Text");
+   for Languages use ("Ada", "Makefile", "Project File", "Text","Python");
 
    for Source_Dirs use ("src", ".");
    for Object_Dir use ".obj";
@@ -16,7 +16,12 @@ project GPR_Tools is
       for Driver ("Makefile") use "";
       for Driver ("Project File") use "";
       for Driver ("Text") use "";
-      for Default_Switches ("Ada") use ("-gnatwa", "-gnatQ", "-O2", "-gnateDVERSION=""" & Version & """");
+      for Driver ("Python") use "";
+      for Default_Switches ("Ada") use ("-gnatwa",
+                                        "-gnatyyM256-s",
+                                        "-gnatQ",
+                                        "-O2",
+                                        "-gnateDVERSION=""" & Version & """");
    end Compiler;
 
    package Binder is
@@ -25,6 +30,7 @@ project GPR_Tools is
 
 
    package Naming is
+      for Implementation_Suffix ("Python") use ".py";
       for Specification_Suffix ("Text") use ".txt";
       for Specification_Exceptions ("Text") use ("README.md");
       for Implementation_Suffix ("Project File") use ".gpr";

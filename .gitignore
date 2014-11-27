@@ -1,9 +1,12 @@
 *.out
 .obj
-*.out
 bin/*
+*.out
 Makefile.config
 *~
 *.db
 gpr_tools-*
+share
+wrk*
+x
 

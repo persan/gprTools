@@ -2,6 +2,9 @@ gprTools
 ========
 Some handy commandline utilities for .gprfiles.
 
+Version: 1.2.0
+- Added capability to print any attribute.
+
 Version: 1.1.0
 - Added capability to echo/exec several commands.
 - Added multiple exclude patterns.
@@ -36,4 +39,3 @@ The tool gprinfo displays various Attributes such as:
  - Calculate buildorder for a .gpr project tree.
  the results could ether be echod to standard outup and in
  some cases executed direct.
-
