@@ -549,9 +549,9 @@ begin
       Recursive := True;
    end if;
 
-   --
+   --  ============
    --  Set up paths
-   --
+   --  ============
    Initialize (Env);
    if GPR_PROJECT_PATH_ORIG /= null and then GPR_PROJECT_PATH_ORIG.all /= "" then
       declare
@@ -575,9 +575,9 @@ begin
 
    Env.Set_Path_From_Gnatls (Gnatls.all, GNAT_Version, GNAT.IO.Put_Line'Access);
 
-   --
+   --  ======================
    --  Locate the root-project
-   --
+   --  ======================
    if Project_File = null then
       Locate_Proj;
    elsif Project_File.all = "" then
@@ -590,9 +590,9 @@ begin
       end if;
    end if;
 
-   --
+   --  ================
    --  Do the real work
-   --
+   --  ================
    if GPR_PROJECT_PATH_LOCAL.Length /= 0 then
       GNAT.OS_Lib.Setenv ("GPR_PROJECT_PATH", Image (GPR_PROJECT_PATH_LOCAL));
    end if;
