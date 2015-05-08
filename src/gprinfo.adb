@@ -8,7 +8,7 @@ with Ada.Strings.Unbounded;
 
 with GNAT.Command_Line;
 with GNAT.Exception_Traces;
-with GNAT.IO;
+with GNAT.IO; use GNAT.IO;
 with GNAT.OS_Lib;
 with GNAT.Regexp;
 with GNAT.Regpat;
@@ -337,7 +337,6 @@ procedure Gprinfo is
    --  -------------------------------------------------------------------------
    --  -------------------------------------------------------------------------
    procedure Print_Help is
-      use GNAT.IO;
       use ASCII;
    begin
       Put_Line ("Displays various aspects of .gpr-project files. " & ASCII.LF &
@@ -376,6 +375,7 @@ procedure Gprinfo is
       Put_Line ("--no-duplicates              Don't duplicate folders when showing dirnames.");
       Put_Line ("--exclude-pattern=regexp     Exclude project paths matching regexp.");
       Put_Line ("--attribute={pkg.}attr{(ix)} Prints the attribute attr.");
+      Put_Line ("-Xnm=val                     Specify an external reference for Project Files.");
       Put_Line ("-v  --version                Print version and then exit.");
       Put_Line ("--verbose                    Be verbose.");
       Put_Line ("--exceptions                 Trace all exceptions.");
@@ -403,6 +403,7 @@ procedure Gprinfo is
                            "-languages " &
                            "-gnatls= " &
                            "x? " &
+                           "X! " &
                            "r -recursive " &
                            "-reverse " &
                            "-echo= " &
@@ -451,6 +452,18 @@ procedure Gprinfo is
                else
                   Max_Iterations := Integer'Value (Parameter);
                end if;
+            when 'X' =>
+               declare
+                  S : GNAT.String_Split.Slice_Set; use GNAT.String_Split;
+               begin
+                  Create (S, Parameter, "=");
+                  if Slice_Count (S) = 2 then
+                     Change_Environment (Env.all, Slice (S, 1), Slice (S, 2));
+                  else
+                     Put_Line ("Invalid argument for ""-X"" """ & Parameter & """.");
+                     Help := True;
+                  end if;
+               end;
             when '?' | 'h' =>
                Help := True;
             when '-' =>
@@ -534,6 +547,7 @@ procedure Gprinfo is
    end Parse_Command_Line;
 
 begin
+   Initialize (Env);
    Parse_Command_Line;
 
    if Help then
@@ -552,7 +566,6 @@ begin
    --  ============
    --  Set up paths
    --  ============
-   Initialize (Env);
    if GPR_PROJECT_PATH_ORIG /= null and then GPR_PROJECT_PATH_ORIG.all /= "" then
       declare
          S : GNAT.String_Split.Slice_Set;
@@ -614,7 +627,12 @@ begin
       if GPR_PROJECT_PATH_SUBPROCESS.Length /= 0 then
          GNAT.OS_Lib.Setenv ("GPR_PROJECT_PATH", Image (GPR_PROJECT_PATH_SUBPROCESS));
       end if;
-      Display (Proj.Root_Project);
+
+      if Proj.Root_Project.Is_Aggregate_Project or Proj.Root_Project.Is_Aggregate_Library then
+         Put_Line ("aggregate projects not supported.");
+      else
+         Display (Proj.Root_Project);
+      end if;
    end if;
 
    Ada.Command_Line.Set_Exit_Status (Exit_Status);

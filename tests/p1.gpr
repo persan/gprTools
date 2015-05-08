@@ -1,0 +1,4 @@
+project p1 is
+  for object_Dir use ".obj/" & project'name;
+  for source_Dirs use ("src/p1");
+end p1;

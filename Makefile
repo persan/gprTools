@@ -1,5 +1,4 @@
 export project=${CURDIR}/gpr_tools
-
 -include Makefile.config
 
 ifeq (${OS},Windows_NT)
@@ -9,8 +8,9 @@ endif
 all:compile
 
 Makefile.config : Makefile  #IGNORE
-	@echo PREFIX=$(dir $(shell dirname $(shell which gnatls))) >$@
-	@echo export PATH=${CURDIR}/bin:${PATH} >>$@
+	@echo "PREFIX=$(dir $(shell dirname $(shell which gnatls)))" >$@
+	@echo "export PATH=${CURDIR}/bin:${PATH}" >>$@
+	@echo "export GPR_PROJECT_PATH=${CURDIR}" >>$@
 
 compile:
 	gprbuild  -s -p -P ${project}.gpr

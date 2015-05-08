@@ -6,7 +6,7 @@ test:
 	gprinfo -P test_1.gpr --missing >out/_missing
 	@cmp out/_missing golden/_missing
 
-	@(if ( gprinfo -P test_1.gpr --Missing >_missing.out ) ; then \
+	@(if ( gprinfo -P test_1.gpr --Missing >out/_missing ) ; then \
 	   echo "Not error exit.";\
            exit -1;\
          fi )

@@ -1,0 +1,3 @@
+aggregate project ag is
+   for Project_Files use ("p*.gpr");
+end ag;
