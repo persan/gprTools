@@ -1,6 +1,6 @@
-project=gpr_tools
+export project=${CURDIR}/gpr_tools
 
-sinclude Makefile.config
+-include Makefile.config
 
 ifeq (${OS},Windows_NT)
 EXE=.exe
@@ -8,8 +8,9 @@ endif
 
 all:compile
 
-Makefile.config : Makefile  bin/version${EXE} #IGNORE
-	echo PREFIX=$(dir $(shell dirname $(shell which gnatls))) >$@
+Makefile.config : Makefile  #IGNORE
+	@echo PREFIX=$(dir $(shell dirname $(shell which gnatls))) >$@
+	@echo export PATH=${CURDIR}/bin:${PATH} >>$@
 
 compile:
 	gprbuild  -s -p -P ${project}.gpr
@@ -23,29 +24,8 @@ install:
 	gprinstall -f -v -p -P ${project}.gpr --mode=usage  --prefix=${DESTDIR}${PREFIX} -XDevelopment=False
 
 test:compile
-	bin/gprinfo -P ${project}.gpr --languages >_language_list.out
-	@cmp _language_list.out _language_list.golden
+	${MAKE} -C tests project=${project}
 
-	bin/gprinfo -P test_1.gpr --missing >_missing.out
-	@cmp _missing.out _missing.golden
-
-	@(if ( bin/gprinfo -P test_1.gpr --Missing >_missing.out ) ; then \
-	   echo "Not error exit.";\
-           exit -1;\
-         fi )
-	@cmp _missing.out _missing.golden
-
-	bin/gprinfo -P gpr_tools --imports --basename    >_direct_imports.out
-	@cmp _direct_imports.out _direct_imports.golden
-
-	bin/gprinfo -P gpr_tools --imports --basename -r >_recursive_imports.out
-	@cmp _recursive_imports.out _recursive_imports.golden
-
-	bin/gprinfo -P gpr_tools --attribute=exec_dir >_attributes.out
-	bin/gprinfo -P gpr_tools --attribute=object_dir >>_attributes.out
-	bin/gprinfo -P gpr_tools --attribute=Source_Dirs >>_attributes.out
-	bin/gprinfo -P gpr_tools "--attribute=Binder.Default_Switches(Ada)" >>_attributes.out
-	@cmp _attributes.out _attributes.golden
 
 dist:test
 	if [[ ! -z ` git status --porcelain`  ]] ; then \
