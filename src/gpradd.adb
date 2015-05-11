@@ -28,8 +28,14 @@ begin
    begin
       for I in 1 .. Ada.Command_Line.Argument_Count loop
 
-         if Exists (Ada.Command_Line.Argument (I)) and  then (Kind (Ada.Command_Line.Argument (I))  = Directory) then
-            F := Create (Filesystem_String (Ada.Directories.Full_Name (Ada.Command_Line.Argument (I))));
+         if Exists (Ada.Command_Line.Argument (I))
+           and then (Kind (Ada.Command_Line.Argument (I)) = Directory)
+         then
+            F :=
+              Create
+                (Filesystem_String
+                   (Ada.Directories.Full_Name
+                      (Ada.Command_Line.Argument (I))));
             if New_Path /= null then
                Found := False;
                for I of New_Path.all loop
@@ -78,7 +84,8 @@ begin
    end;
 
    begin --  print the result.
-      Ada.Text_IO.Put_Line ("export GPR_PROJECT_PATH=" & String (To_Path (Sys_Path.all)));
+      Ada.Text_IO.Put_Line
+        ("export GPR_PROJECT_PATH=" & String (To_Path (Sys_Path.all)));
       Ada.Text_IO.Put_Line ("export ADA_PROJECT_PATH=");
    end;
 
