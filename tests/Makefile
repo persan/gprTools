@@ -24,3 +24,6 @@ test:
 	gprinfo -P ${project} "--attribute=Binder.Default_Switches(Ada)" >>out/_attributes
 	@cmp out/_attributes golden/_attributes
 
+	gprinfo -P  ag.gpr --attribute=Source_Dirs  >out/_agg_sourcdirs
+	gprinfo -P  ag.gpr --attribute=Object_Dir   >>out/_agg_sourcdirs
+	@cmp out/_agg_sourcdirs golden/_agg_sourcdirs

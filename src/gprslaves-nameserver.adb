@@ -1,4 +1,4 @@
-with Gnat.String_Split;
+with GNAT.String_Split;
 package body Gprslaves.Nameserver is
 
    --------------

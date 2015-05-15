@@ -22,9 +22,10 @@ with GNATCOLL.Arg_Lists;
 with GNATCOLL.Projects;
 with GNATCOLL.Templates;
 with GNATCOLL.VFS;
+with Ada.Containers.Indefinite_Ordered_Sets;
+with GNAT.Directory_Operations;
 
 procedure Gprinfo is
-
    use Ada.Containers;
    use Ada.Directories;
    use Ada.Strings.Fixed;
@@ -50,6 +51,7 @@ procedure Gprinfo is
 
    package Command_Vectors is new Ada.Containers.Vectors (Natural, Command_Type);
    package String_Vectors is new Ada.Containers.Vectors (Natural, GNAT.Strings.String_Access);
+   package String_Sets is new Ada.Containers.Indefinite_Ordered_Sets (Element_Type => String);
 
    GPR_PROJECT_PATH_LOCAL      : String_Vectors.Vector;
    GPR_PROJECT_PATH_SUBPROCESS : String_Vectors.Vector;
@@ -334,6 +336,16 @@ procedure Gprinfo is
       end if;
    end Handle_Error_Report;
 
+   procedure Handle_Error_Report_Suppress_Warnings (Msg : String) is
+      Matcher  : constant GNAT.Regpat.Pattern_Matcher := Compile ("^(\w+\.gpr):\d+:\d+: warning: object directory .+");
+      Matches  : GNAT.Regpat.Match_Array (1 .. GNAT.Regpat.Paren_Count (Matcher));
+   begin
+      Match (Matcher, Msg, Matches);
+      if Matches (1) = No_Match then
+         GNAT.IO.Put_Line (Msg (Matches (3).First .. Matches (3).Last));
+      end if;
+   end Handle_Error_Report_Suppress_Warnings;
+
    --  -------------------------------------------------------------------------
    --  -------------------------------------------------------------------------
    procedure Print_Help is
@@ -342,7 +354,7 @@ procedure Gprinfo is
       Put_Line ("Displays various aspects of .gpr-project files. " & ASCII.LF &
                   "could also excute commands on the resulting project set." & ASCII.LF &
                   "The usage usage is multiple:" & ASCII.LF &
-                  " * Exctract aspects of a single project file to be used in scripts." & ASCII.LF &
+                  " * Extract aspects of a single project file to be used in scripts." & ASCII.LF &
                   " * Iterate over project-trees." & LF &
                   " * Find missing projects in a project tree.");
 
@@ -623,17 +635,42 @@ begin
          end;
       end loop Load_Loop;
    else
-      Proj.Load (Create (Filesystem_String (Project_File.all)), Env);
+      Proj.Load (Create (Filesystem_String (Project_File.all)), Env, Errors => Handle_Error_Report_Suppress_Warnings'Unrestricted_Access);
       if GPR_PROJECT_PATH_SUBPROCESS.Length /= 0 then
          GNAT.OS_Lib.Setenv ("GPR_PROJECT_PATH", Image (GPR_PROJECT_PATH_SUBPROCESS));
       end if;
 
       if Proj.Root_Project.Is_Aggregate_Project or Proj.Root_Project.Is_Aggregate_Library then
-         Put_Line ("aggregate projects not supported.");
+         Recursive := False;
+         declare
+            Projects : String_Sets.Set;
+
+            procedure Process (Directory_Entry : Directory_Entry_Type) is
+               P        : constant Project_Type := Project_From_Path (Proj, Create_From_UTF8 (Ada.Directories.Full_Name (Directory_Entry)));
+               Iter     : Project_Iterator;
+            begin
+               Projects.Include (P.Name);
+               Iter := P.Start (True, False, True);
+               while Current (Iter) /= No_Project loop
+                  Projects.Include (Current (Iter).Name);
+                  Next (Iter);
+               end loop;
+            end Process;
+            Project_Files : constant GNAT.Strings.String_List_Access := Proj.Root_Project.Attribute_Value  (Build ("", "Project_Files"));
+         begin
+            Locate_All_Projects : for I of  Project_Files.all loop
+               Ada.Directories.Search (GNAT.Directory_Operations.Dir_Name (I.all),
+                                       GNAT.Directory_Operations.Base_Name (I.all),
+                                       (False, True, False),
+                                       Process'Access);
+            end loop Locate_All_Projects;
+            for I of Projects loop
+               Display (Proj.Project_From_Name (I));
+            end loop;
+         end;
       else
          Display (Proj.Root_Project);
       end if;
    end if;
-
    Ada.Command_Line.Set_Exit_Status (Exit_Status);
 end Gprinfo;

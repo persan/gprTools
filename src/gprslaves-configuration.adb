@@ -1,27 +1,28 @@
 with GNAT.OS_Lib;
-with Ada.Directories; use Ada.Directories;
+with Ada.Directories;   use Ada.Directories;
 with Ada.Command_Line;
 with Ada.Strings.Fixed; use Ada.Strings.Fixed;
 with GNAT.Strings;
-with Ada.Text_IO;use Ada.Text_IO;
+with Ada.Text_IO;       use Ada.Text_IO;
 package body Gprslaves.Configuration is
 
-   HOME         : constant GNAT.Strings.String_Access := GNAT.OS_Lib.Getenv ("HOME");
-   CONFIGFOLDER : constant String := Ada.Directories.Compose (HOME.all, ".gprslaves");
-   URL_PATH     :    constant String := Ada.Directories.Compose (CONFIGFOLDER, "URL");
-
+   HOME : constant GNAT.Strings.String_Access := GNAT.OS_Lib.Getenv ("HOME");
+   CONFIGFOLDER : constant String                     :=
+     Ada.Directories.Compose (HOME.all, ".gprslaves");
+   URL_PATH : constant String := Ada.Directories.Compose (CONFIGFOLDER, "URL");
 
    procedure Q_GNAT is
-      FD          : File_Descriptor;
-      Name        : String_Access;
-      Args        : String_Access_List (1 .. 1) := (new String'("-v"));
+      FD   : GNAT.OS_Lib.File_Descriptor;
+      Name : GNAT.Strings.String_Access;
+      Args : constant GNAT.Strings.String_List (1 .. 1) :=
+        (1 => new String'("-v"));
       Return_Code : Integer;
 
    begin
-      Create_Temp_File (Fd, Name);
-      GNAT.OS_Lib.Spawn ("gnatls", Args, Fd, Return_Code);
-      Close (Fd);
-   end;
+      GNAT.OS_Lib.Create_Temp_File (FD, Name);
+      GNAT.OS_Lib.Spawn ("gnatls", Args, FD, Return_Code);
+      GNAT.OS_Lib.Close (FD);
+   end Q_GNAT;
    ---------
    -- URL --
    ---------
@@ -29,8 +30,12 @@ package body Gprslaves.Configuration is
    function URL return String is
    begin
       for I in 1 .. Ada.Command_Line.Argument_Count loop
-         if Index (Ada.Command_Line.Argument (I), "--url=") = Ada.Command_Line.Argument (I)'First then
-            return Ada.Command_Line.Argument (I) (Ada.Command_Line.Argument (I)'First + 6 .. Ada.Command_Line.Argument (I)'Last);
+         if Index (Ada.Command_Line.Argument (I), "--url=") =
+           Ada.Command_Line.Argument (I)'First
+         then
+            return Ada.Command_Line.Argument (I)
+                (Ada.Command_Line.Argument (I)'First + 6 ..
+                     Ada.Command_Line.Argument (I)'Last);
          end if;
       end loop;
       if Exists (URL) then
@@ -42,7 +47,9 @@ package body Gprslaves.Configuration is
             Open (F, In_File, URL_PATH);
             while not End_Of_File (F) loop
                Get_Line (F, Buffer, Last);
-               if Index (Buffer (Buffer'First .. Last), "http") = Buffer'First then
+               if Index (Buffer (Buffer'First .. Last), "http") =
+                 Buffer'First
+               then
                   return Buffer (Buffer'First .. Last);
                end if;
             end loop;

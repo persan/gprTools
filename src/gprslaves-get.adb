@@ -6,5 +6,9 @@ procedure Gprslaves.Get is
    Conf : Ada.Strings.Unbounded.Unbounded_String;
 
 begin
-   Ada.Text_IO.Put_Line ("--distributed=" & Nameserver_Service.Client.Find (To_String (Conf), Gprslaves.Configuration.URL));
+   Ada.Text_IO.Put_Line
+     ("--distributed=" &
+      Nameserver_Service.Client.Find
+        (To_String (Conf),
+         Gprslaves.Configuration.URL));
 end Gprslaves.Get;

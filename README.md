@@ -2,6 +2,9 @@ gprTools
 ========
 Some handy commandline utilities for .gprfiles.
 
+Version: 1.3.1
+- Added support for aggregate projects.
+
 Version: 1.2.0
 - Added capability to print any attribute.
 

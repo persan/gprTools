@@ -5,7 +5,7 @@ ifeq (${OS},Windows_NT)
 EXE=.exe
 endif
 
-all:compile
+all:compile test
 
 Makefile.config : Makefile  #IGNORE
 	@echo "PREFIX=$(dir $(shell dirname $(shell which gnatls)))" >$@
@@ -21,8 +21,8 @@ soap:
 pretty:
 	gnatpp -rf -P ${project}.gpr
 compile:
-	${MAKE} soap
-	${MAKE} pretty
+	#${MAKE} soap
+	#m${MAKE} pretty
 	gprbuild  -s -p -P ${project}.gpr
 
 clean:
