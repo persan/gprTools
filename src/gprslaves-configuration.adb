@@ -55,6 +55,6 @@ package body Gprslaves.Configuration is
             end loop;
          end;
       end if;
-      return "http://localhost:8023";
+      return "http://localhost:8484";
    end URL;
 end Gprslaves.Configuration;
