@@ -9,10 +9,10 @@ use GNAT.Command_Line;
 with GNAT.String_Split;
 with GNAT.Spitbol; use GNAT.Spitbol;
 with GNAT.Spitbol.Table_VString; use GNAT.Spitbol.Table_VString;
+with Gprslaves.Configuration;
 procedure Gprslaves.Get is
    use GNAT.String_Split;
    use DB;
-
    procedure Put (Self : GNAT.Spitbol.Table_VString.Table) is
       J : constant GNATCOLL.JSON.JSON_Array := Gprslaves.DB.JSON.Create (Self);
       V : constant GNATCOLL.JSON.JSON_Value := GNATCOLL.JSON.Create (J);
@@ -22,22 +22,23 @@ procedure Gprslaves.Get is
    Keys : GNAT.Spitbol.Table_VString.Table (32);
    procedure Help is
    begin
-      null;
+      Put_Line (Configuration.Command & " " & VERSION &
+                  "-v --version displa");
    end Help;
-   Nameserver : GNAT.Spitbol.VString := V (Default_Nameserver);
 begin
    Set (Keys, V ("GNAT"), V (Get_Gnat_Version));
    loop
       case Getopt ("D! -help h ? " &
-                     "v -version " &
-                     "n= -nameserver=") is
+                     "-version " &
+                     "n= -nameserver= " &
+                     "v") is
          when ASCII.NUL => exit;
 
          when '-' =>
             if Full_Switch = "-version" then
                Put_Line (VERSION);
             elsif Full_Switch = "-nameserver" then
-               Nameserver := V (Parameter);
+               Configuration.Nameserver := V (Parameter);
             end if;
          when 'D' =>
             declare
@@ -49,9 +50,9 @@ begin
                end if;
             end;
          when 'v' =>
-            Put_Line (VERSION);
+            Configuration.Verbosity := Configuration.Verbosity + 1;
          when 'n' =>
-            Nameserver := V (Parameter);
+            Configuration.Nameserver := V (Parameter);
          when 'h' | '?' =>
             Help;
             return;
@@ -59,6 +60,6 @@ begin
             null;
       end case;
    end loop;
-   Put_Line (S (Nameserver));
+   Put_Line (S (Configuration.Nameserver));
    Put (Keys);
 end Gprslaves.Get;

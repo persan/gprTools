@@ -59,6 +59,7 @@ begin
    begin --  Remove all system entries.
       GNAT.OS_Lib.Setenv ("ADA_PROJECT_PATH", "");
       GNAT.OS_Lib.Setenv ("GPR_PROJECT_PATH", "");
+      GNAT.OS_Lib.Setenv ("GPR_PROJECT_PATH_FILE", "");
       Env.all.Set_Path_From_Gnatls ("gnatls", GNAT_Version);
       Append (Sys_Path, Env.all.Predefined_Project_Path);
       for I of Sys_Path.all loop

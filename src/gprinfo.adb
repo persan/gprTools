@@ -147,6 +147,7 @@ procedure Gprinfo is
          declare
             Command                  : GNATCOLL.Arg_Lists.Arg_List;
             Commands_Template        : GNATCOLL.Arg_Lists.Arg_List;
+            use type Ada.Command_Line.Exit_Status;
          begin
             Commands_Template := GNATCOLL.Arg_Lists.Parse_String (C.Cmd.all, Separate_Args);
             for I in 0 .. Args_Length (Commands_Template) loop
@@ -173,7 +174,8 @@ procedure Gprinfo is
 
                Args := new GNAT.OS_Lib.Argument_List'(GNATCOLL.Arg_Lists.To_List (Command, False));
                Cmd := GNAT.OS_Lib.Locate_Exec_On_Path (GNATCOLL.Arg_Lists.Get_Command (Command));
-               if GNAT.OS_Lib.Spawn (Cmd.all, Args.all) /= 0 then
+               Exit_Status := Ada.Command_Line.Exit_Status (GNAT.OS_Lib.Spawn (Cmd.all, Args.all));
+               if Exit_Status /= 0 then
                   Continue := False;
                end if;
                Free (Cmd);
@@ -360,7 +362,7 @@ procedure Gprinfo is
 
       Put_Line ("-P=proj                      Use Project File proj");
       Put_Line ("-aP=dir                      Add directory dir to project search path (not propageted to subproceses).");
-      Put_Line ("-Ap=dir                      Add directory dir to project search path (propageted to subproceses).");
+      Put_Line ("-Ap=dir                      Add directory dir to project search path (only propageted to subproceses).");
       Put_Line ("-AP=dir                      Add directory dir to project search path global.");
       Put_Line ("--dirname                    Show directorynames of projects.");
       Put_Line ("--basename                   Show basenames of projects.");
@@ -673,4 +675,7 @@ begin
       end if;
    end if;
    Ada.Command_Line.Set_Exit_Status (Exit_Status);
+exception
+   when others =>
+      Ada.Command_Line.Set_Exit_Status (Ada.Command_Line.Failure);
 end Gprinfo;
