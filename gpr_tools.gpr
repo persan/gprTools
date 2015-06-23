@@ -9,13 +9,15 @@ project GPR_Tools is
    for Source_Dirs use ("src/**", ".");
    for Object_Dir use ".obj";
    for Exec_Dir use "bin";
-   for Main use ("gprinfo.adb",
+   for Main use ("pkg2gpr-main.adb",
+                 "gprinfo.adb",
                  "gprslaves-get.adb",
                  "gprslaves-launcher.adb",
                  "gprslaves-server.adb",
                  "gpradd.adb");
 
    package Builder is
+      for Executable ("pkg2gpr-main.adb") use "pkg2gpr";
       for Executable ("gprslaves-get.adb") use "gprslaves";
       for Executable ("gprslaves-launcher.adb") use "gprslave-launcher";
    end Builder;
