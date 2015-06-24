@@ -37,4 +37,6 @@ package Pkg2gpr is
    function Linker_Options (Item : Descr) return String;
    function Get_Include (Cpp : String := "cpp") return String_Vectors.Vector;
    function Get_Libs (Gcc : String := "gcc") return String_Vectors.Vector;
+   function Compiler_Default_Switches (Item : Descr) return String_Vectors.Vector;
+
 end Pkg2gpr;

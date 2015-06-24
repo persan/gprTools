@@ -7,6 +7,7 @@ with Ada.Strings.Fixed;
 with Ada.Directories;
 use Ada.Directories;
 with Ada.Strings;
+with Ada.Strings.Maps; use Ada.Strings.Maps;
 package body Pkg2gpr is
    use Ada.Text_IO;
    use GNAT.Regpat;
@@ -19,8 +20,8 @@ package body Pkg2gpr is
    -- Read_Pkg --
    --------------
    Matcher    : constant GNAT.Regpat.Pattern_Matcher :=
-                  GNAT.Regpat.Compile ("^((\w+)\s*=\s*(\S+))" &
-                                                    "|(Name):(.+)" &
+                  GNAT.Regpat.Compile ("^((\w+)\s*=\s*(.*))" &
+                                         "|^(Name):(.+)" &
                                          "|^(Description):\s*(\S.+)" &
                                          "|^(URL):\s*(\S.+)" &
                                          "|^(Version):\s*(\S.+)" &
@@ -30,6 +31,18 @@ package body Pkg2gpr is
                                          "|^(Cflags):\s*(\S.+)" &
                                          "|^(Libs):\s*(\S.+)" &
                                          "|^(Libs.private):\s*(\S.+)");
+
+   function Compiler_Default_Switches (Item : Descr) return String_Vectors.Vector is
+
+   begin
+      return Ret : String_Vectors.Vector do
+         for I of Item.Cflags loop
+            if Index (I, "-I") /= 1 then
+               Ret.Append (I);
+            end if;
+         end loop;
+      end return;
+   end Compiler_Default_Switches;
 
    function Linker_Options (Item : Descr) return String is
       Ret : Unbounded_String;
@@ -78,10 +91,14 @@ package body Pkg2gpr is
 
    procedure Read_Pkg (Item : in out Descr; From : String) is
 
-      function Expand (Src : String) return String is
+      function Expand (S : String) return String is
          Vars   : GNATCOLL.Templates.Substitution_Array (1 .. Integer (Item.Variables.Length));
          Cursor : Natural := 1;
+         Src    : String := S;
       begin
+         while Index (Src, "\""") > 0 loop
+            Src (Index (Src, "\""")) := '"';
+         end loop;
          for C in Item.Variables.Iterate loop
             Vars (Cursor) := (Name  => new String'(To_String (String_Maps.Key (C))),
                               Value => new String'(To_String (String_Maps.Element (C))));
@@ -94,14 +111,15 @@ package body Pkg2gpr is
 
       function Expand (Src : String) return Unbounded_String is
       begin
-         return To_Unbounded_String (Expand (Src));
+         return To_Unbounded_String (Expand (Trim (Trim (Src, To_Set ("""'"), To_Set ("""'")), To_Set (" "), To_Set (" "))));
       end Expand;
 
       function Expand (Src : String) return String_Vectors.Vector is
          S : GNAT.String_Split.Slice_Set;
+         Temp : constant String := Trim (Src, To_Set ("""'"), To_Set ("""'"));
       begin
          return Ret : String_Vectors.Vector do
-            GNAT.String_Split.Create (S, Src, " ,");
+            GNAT.String_Split.Create (S, Expand (Temp), " ,");
             for I in 1 .. GNAT.String_Split.Slice_Count (S) loop
                declare
                   Name : constant Unbounded_String := Expand (GNAT.String_Split.Slice (S, I));
@@ -151,6 +169,7 @@ package body Pkg2gpr is
 
       F : Ada.Text_IO.File_Type;
    begin
+      Item.Variables.Include (To_Unbounded_String ("pcfiledir"), To_Unbounded_String (Containing_Directory (From)));
       Item.Default_Include := Get_Include;
       Item.Default_Libs    := Get_Libs;
       Item.FName           := To_Unbounded_String (Base_Name (From));
@@ -277,6 +296,20 @@ package body Pkg2gpr is
 
 
       Put_Line (Output, "   for Externally_Built use ""True"";");
+
+      Put_Line (Output, "   package Compiler is");
+      if Item.Compiler_Default_Switches.Length > 0 then
+         Put_Line (Output, "      for Default_Switches(""C"") use " & Image (Compiler_Default_Switches (Item)) & ";");
+      end if;
+      for I of Item.Requires loop
+         if Length (I) > 1 and then Element (I, 1) not in '<' | '>' | '=' | '0' .. '9' then
+            Put_Line (Output, "      for Default_Switches(""C"") use Compiler'Default_Switches(""C"") & " &
+                        Pkg2Ada_Name (I) & ".Compiler'Default_Switches(""C"");");
+         end if;
+      end loop;
+
+      Put_Line (Output, "   end Compiler;");
+
       if Item.Libs.Length /= 0 then
          New_Line (Output);
          Put_Line (Output, "   package Linker is");
@@ -297,7 +330,7 @@ package body Pkg2gpr is
                Temp := Unbounded_Slice (I, 3, Length (I));
                if not Item.Default_Include.Contains (Temp) then
                   if Exists (To_String (Temp)) then
-                     Ret.Append (Temp);
+                     Ret.Append (To_Unbounded_String (Normalize_Pathname (To_String (Temp))));
                   end if;
                end if;
             end if;
@@ -377,16 +410,12 @@ package body Pkg2gpr is
                            Ret.Append (To_Unbounded_String (Name));
                         end if;
                      end if;
-
                   end;
-
-
                end loop;
             end if;
          end;
       end loop;
       Close (F);
-
       Free (Exe);
       Free (Args);
       return Ret;
