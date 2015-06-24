@@ -6,12 +6,15 @@ with GNAT.OS_Lib;
 with Ada.Strings.Fixed;
 with Ada.Directories;
 use Ada.Directories;
+with Ada.Strings;
 package body Pkg2gpr is
    use Ada.Text_IO;
    use GNAT.Regpat;
    use GNAT.String_Split;
    use Ada.Containers;
    use GNAT.OS_Lib;
+   use Ada.Strings;
+   use Ada.Strings.Fixed;
    --------------
    -- Read_Pkg --
    --------------
@@ -31,7 +34,6 @@ package body Pkg2gpr is
    function Linker_Options (Item : Descr) return String is
       Ret : Unbounded_String;
       function Is_Std (S : String) return Boolean is
-         use Ada.Strings.Fixed;
       begin
          if Index (S, "-L") = S'First then
             if Item.Default_Libs.Contains (To_Unbounded_String (S (S'First + 2 .. S'Last))) then
@@ -99,9 +101,15 @@ package body Pkg2gpr is
          S : GNAT.String_Split.Slice_Set;
       begin
          return Ret : String_Vectors.Vector do
-            GNAT.String_Split.Create (S, Src, " ");
+            GNAT.String_Split.Create (S, Src, " ,");
             for I in 1 .. GNAT.String_Split.Slice_Count (S) loop
-               Ret.Append (Unbounded_String'(Expand (GNAT.String_Split.Slice (S, I))));
+               declare
+                  Name : constant Unbounded_String := Expand (GNAT.String_Split.Slice (S, I));
+               begin
+                  if Length (Name) > 0 then
+                     Ret.Append (Name);
+                  end if;
+               end;
             end loop;
          end return;
       end Expand;
@@ -112,21 +120,13 @@ package body Pkg2gpr is
       begin
          Match (Matcher, Data => L, Matches => Matches);
          if Matches (0) /= No_Match then
---              for I in Matches'Range loop
---                 if Matches (I) /= No_Match then
---                    Put_Line
---                      (I'Img & "=> (" & Matches (I).First'Img & ","
---                       & Matches (I).Last'Img & ")" &
---                         L (Matches (I).First .. Matches (I).Last));
---                 end if;
---              end loop;
             if Matches (2) /= No_Match then -- Variable
                Item.Variables.Include
                  (Key      => To_Unbounded_String (L (Matches (2).First .. Matches (2).Last)),
                   New_Item => Expand (L (Matches (3).First .. Matches (3).Last)));
 
             elsif Matches (4) /= No_Match then -- Name
-               Item.Name := Expand (L (Matches (5).First .. Matches (5).Last));
+               Item.Name := Trim (Expand (L (Matches (5).First .. Matches (5).Last)), Both);
             elsif Matches (6) /= No_Match then -- Description
                Item.Description := Expand (L (Matches (7).First .. Matches (7).Last));
             elsif Matches (8) /= No_Match then -- URL
@@ -213,37 +213,76 @@ package body Pkg2gpr is
                end if;
             end;
          end loop;
+         New_Line (Output);
       end if;
       Put_Line (Output, "project " & Pkg2Ada_Name (Item.FName) & " is");
       New_Line (Output);
-      Put_Line (Output, "  for Languages use (""C"");");
-      if Get_Source_Dirs (Item).Length /= 0 then
-         Put_Line (Output, "  For Source_Dirs use " & Image (Get_Source_Dirs (Item)) & ";");
-      end if;
+      Put_Line (Output, "   for Languages use (""C"");");
+      New_Line (Output);
 
       if Length (Item.Name) /= 0 then
-         Put_Line (Output, "  Name := """ & To_String (Item.Name) & """;");
+         Put_Line (Output, "   Name           := """ & To_String (Item.Name) & """;");
       end if;
 
-      if Length (Item.SrcFile) /= 0 then
-         Put_Line (Output, "  SrcFile := """ & To_String (Item.SrcFile) & """;");
-      end if;
 
       if Length (Item.Description) /= 0 then
-         Put_Line (Output, "  Description := """ & To_String (Item.Description) & """;");
-      end if;
-      if Length (Item.URL) /= 0 then
-         Put_Line (Output, "  URL := """ & To_String (Item.URL) & """;");
+         Put_Line (Output, "   Description    := """ & To_String (Item.Description) & """;");
       end if;
       if Length (Item.Version) /= 0 then
-         Put_Line (Output, "  Version := """ & To_String (Item.Version) & """;");
+         Put_Line (Output, "   Version        := """ & To_String (Item.Version) & """;");
       end if;
-      Put_Line (Output, "  for Externally_Built use ""True"";");
+
+      if Length (Item.URL) /= 0 then
+         Put_Line (Output, "   URL            := """ & To_String (Item.URL) & """;");
+      end if;
+      New_Line (Output);
+
+      if Length (Item.SrcFile) /= 0 then
+         Put_Line (Output, "   Source_Pc_File := """ & To_String (Item.SrcFile) & """;");
+      end if;
+      New_Line (Output);
+
+      if Item.Variables.Length > 0 then
+
+         declare
+            Max_Name_Length : Natural := 0;
+         begin
+            for C in Item.Variables.Iterate loop
+               Max_Name_Length := Natural'Max (Max_Name_Length, Length (String_Maps.Key (C)));
+            end loop;
+
+            Put_Line (Output, "   package Variables is");
+            for C in Item.Variables.Iterate loop
+               declare
+                  Name  : constant String := To_String (String_Maps.Key (C));
+                  Value : constant String := To_String (String_Maps.Element (C));
+               begin
+                  Put_Line (Output,
+                            "      V_" &  Name & ((Max_Name_Length - Name'Length) * ' ') &
+                              " := """ & Value  & """;");
+               end;
+            end loop;
+            Put_Line (Output, "   end Variables;");
+            New_Line (Output);
+         end;
+      end if;
+
+      if Get_Source_Dirs (Item).Length /= 0 then
+         Put_Line (Output, "   for Source_Dirs use " & Image (Get_Source_Dirs (Item)) & ";");
+         New_Line (Output);
+      else
+         Put_Line (Output, "   for Source_Dirs use ();");
+         New_Line (Output);
+      end if;
+
+
+      Put_Line (Output, "   for Externally_Built use ""True"";");
       if Item.Libs.Length /= 0 then
          New_Line (Output);
-         Put_Line (Output, "  package Linker is");
-         Put_Line (Output, "     for Linker_Options use " & Linker_Options (Item) & ";");
-         Put_Line (Output, "  end Linker;");
+         Put_Line (Output, "   package Linker is");
+         Put_Line (Output, "      for Linker_Options use " & Linker_Options (Item) & ";");
+         Put_Line (Output, "   end Linker;");
+         New_Line (Output);
       end if;
 
       Put_Line (Output, "end " & Pkg2Ada_Name (Item.FName) & ";");
@@ -257,7 +296,9 @@ package body Pkg2gpr is
             if Index (I, "-I") > 0 then
                Temp := Unbounded_Slice (I, 3, Length (I));
                if not Item.Default_Include.Contains (Temp) then
-                  Ret.Append (Temp);
+                  if Exists (To_String (Temp)) then
+                     Ret.Append (Temp);
+                  end if;
                end if;
             end if;
          end loop;
@@ -316,7 +357,6 @@ package body Pkg2gpr is
       F            : File_Type;
       Ret          : String_Vectors.Vector;
       Exe          : GNAT.OS_Lib.String_Access := GNAT.OS_Lib.Locate_Exec_On_Path (Gcc);
-      use Ada.Strings.Fixed;
    begin
       GNAT.OS_Lib.Spawn (Exe.all, Args.all, "_dummy", Success, Return_Code);
       Open (F, In_File, "_dummy");

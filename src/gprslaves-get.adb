@@ -10,11 +10,12 @@ with GNAT.String_Split;
 with GNAT.Spitbol; use GNAT.Spitbol;
 with GNAT.Spitbol.Table_VString; use GNAT.Spitbol.Table_VString;
 with Gprslaves.Configuration;
+use Gprslaves.Configuration;
 procedure Gprslaves.Get is
    use GNAT.String_Split;
    use DB;
    procedure Put (Self : GNAT.Spitbol.Table_VString.Table) is
-      J : constant GNATCOLL.JSON.JSON_Array := Gprslaves.DB.JSON.Create (Self);
+      J : GNATCOLL.JSON.JSON_Array;
       V : constant GNATCOLL.JSON.JSON_Value := GNATCOLL.JSON.Create (J);
    begin
       Ada.Text_IO.Put_Line (GNATCOLL.JSON.Write (V, False));

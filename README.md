@@ -2,6 +2,10 @@ gprTools
 ========
 Some handy commandline utilities for .gprfiles.
 
+Version: 1.4.1
+- Added command pkg2gpr A tool that generates .gpr-files from .pc files
+   to simlplify use of  preinstalled sw.
+
 Version: 1.3.1
 - Added support for aggregate projects.
 

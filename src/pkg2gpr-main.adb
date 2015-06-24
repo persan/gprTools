@@ -7,7 +7,7 @@ with Ada.Command_Line;
 with Ada.Text_IO; use Ada.Text_IO;
 procedure Pkg2gpr.Main is
    OutputFolder : aliased GNAT.Strings.String_Access := new String'(Ada.Directories.Current_Directory);
-   Version      : constant String :=  "1.0.0";
+   Version      : constant String := $VERSION;
    Command_Name : constant String := Ada.Directories.Base_Name (Ada.Command_Line.Command_Name);
    procedure Show (S : String) is
       D : Descr;
@@ -21,20 +21,29 @@ procedure Pkg2gpr.Main is
       Put_Line
         (Command_Name & " "  & Version & LF &
            "Syntax:" & LF &
-           " " & Command_Name & " {OPtions} pkg-FILEs" & LF &
+           " " & Command_Name & " [OPtions] pkg-FILEs" & LF &
            "Options:" & LF &
-           "-OFolder   Define output folder" & LF &
-           "-h -?      Print this text.");
+           " -OFolder       Define output folder." & LF &
+           " --version      Printversion and exit." & LF &
+           " -h -? --help   Print this text.");
    end Print_Help;
 
 begin
    loop
-      case GNAT.Command_Line.Getopt ("O: ? h") is  -- Accepts '-a', '-ad', or '-b argument'
+      case GNAT.Command_Line.Getopt ("O: ? h -help") is
          when ASCII.NUL => exit;
 
          when '?' | 'h' =>
             Print_Help;
             return;
+         when '-' =>
+            if Full_Switch = "-version" then
+               Put_Line (Version);
+               return;
+            elsif Full_Switch = "-help" then
+               Print_Help;
+               return;
+            end if;
          when 'O' =>
             OutputFolder := new String'(GNAT.Command_Line.Parameter);
 
