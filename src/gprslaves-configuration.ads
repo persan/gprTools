@@ -9,6 +9,8 @@ package Gprslaves.Configuration is
 
    type Verbose_Level is range 0 .. 2;
    Verbosity  : Verbose_Level := 0;
+
    procedure Trace_Log (Level : Verbose_Level; Message : VString);
    procedure Trace_Log (Level : Verbose_Level; Message : String);
+
 end Gprslaves.Configuration;

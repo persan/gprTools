@@ -90,8 +90,8 @@ package body Gprslaves.DB is
    end Get_Free_Port;
 
    function Get_Gnat_Version return String is
-         Env          : GNATCOLL.Projects.Project_Environment_Access;
-      Fd           : GNAT.Expect.Process_Descriptor_Access;
+      Env            : GNATCOLL.Projects.Project_Environment_Access;
+      Fd             : GNAT.Expect.Process_Descriptor_Access;
       Gnatls_Args    : GNAT.OS_Lib.Argument_List_Access :=
                          Argument_String_To_List ("gnatls" & " -v");
       procedure Unchecked_Free is new Ada.Unchecked_Deallocation
@@ -101,10 +101,10 @@ package body Gprslaves.DB is
       GNATCOLL.Projects.Spawn_Gnatls (Self => Env.all, Fd => Fd, Gnatls_Args => Gnatls_Args, Errors => null);
       if Fd /= null then
          declare
-            S : constant String := GNATCOLL.Utils.Get_Command_Output (Fd);
+            S     : constant String := GNATCOLL.Utils.Get_Command_Output (Fd);
             Index : Integer := S'First;
             First : Integer;
-            Last : Integer;
+            Last  : Integer;
          begin
             GNATCOLL.Utils.Skip_To_String (S, Index, "GNATLS");
             while S (Index) /= ' ' loop

@@ -32,20 +32,14 @@ package body Gprslaves.DB.JSON is
 
    function Create
      (Item : GNAT.Spitbol.Table_VString.Table)
-      return GNATCOLL.JSON.JSON_Array
+      return GNATCOLL.JSON.JSON_Value
    is
+      MyArr : JSON_Array := Empty_Array;
    begin
-      return MyArr : JSON_Array := Empty_Array do
-         for Keys of GNAT.Spitbol.Table_VString.Convert_To_Array (Item) loop
-            declare
-               E : constant JSON_Value := Create_Object;
-            begin
-               E.Set_Field ("Name", Keys.Name);
-               E.Set_Field ("Value", Keys.Value);
-               Append (MyArr, E);
-            end;
-         end loop;
-      end return;
+      for Key of GNAT.Spitbol.Table_VString.Convert_To_Array (Item) loop
+         Append (MyArr, Create (Key));
+      end loop;
+      return Create (MyArr);
    end Create;
 
    ------------
@@ -54,14 +48,14 @@ package body Gprslaves.DB.JSON is
 
    function Create
      (Item : Host_Info_Vectors.Vector)
-      return GNATCOLL.JSON.JSON_Array
+      return GNATCOLL.JSON.JSON_Value
    is
+      MyArr : JSON_Array := Empty_Array;
    begin
-      return MyArr : JSON_Array := Empty_Array do
-         for Value of Item loop
-            Append (MyArr, Create (Value));
-         end loop;
-      end return;
+      for Value of Item loop
+         Append (MyArr, Create (Value));
+      end loop;
+      return Create (MyArr);
    end Create;
 
 
@@ -90,12 +84,13 @@ package body Gprslaves.DB.JSON is
       end return;
    end Get;
 
-   function Get (Item : GNATCOLL.JSON.JSON_Array) return GNAT.Spitbol.Table_VString.Table is
+   function Get (Item : GNATCOLL.JSON.JSON_Value) return GNAT.Spitbol.Table_VString.Table is
+      Arr : constant GNATCOLL.JSON.JSON_Array := Get (Item);
    begin
-      return Ret : GNAT.Spitbol.Table_VString.Table (Interfaces.Unsigned_32 (Length (Item))) do
-         for Ix in 1 .. Length (Item) loop
+      return Ret : GNAT.Spitbol.Table_VString.Table (Interfaces.Unsigned_32 (Length (Arr))) do
+         for Ix in 1 .. Length (Arr) loop
             declare
-               V : constant GNAT.Spitbol.Table_VString.Table_Entry := Get (Get (Item, Ix));
+               V : constant GNAT.Spitbol.Table_VString.Table_Entry := Get (Get (Arr, Ix));
             begin
                GNAT.Spitbol.Table_VString.Set (Ret, V.Name, V.Value);
             end;
@@ -103,12 +98,19 @@ package body Gprslaves.DB.JSON is
       end return;
    end Get;
 
-   function Get (Item : GNATCOLL.JSON.JSON_Array) return Host_Info_Vectors.Vector is
+   function Get (Item : GNATCOLL.JSON.JSON_Value) return Host_Info_Vectors.Vector is
+      Arr : constant GNATCOLL.JSON.JSON_Array := Get (Item);
    begin
       return Ret : Host_Info_Vectors.Vector do
-         for Ix in 1 .. Length (Item) loop
-            Ret.Append (Get (Get (Item, Ix)));
+         for Ix in 1 .. Length (Arr) loop
+            Ret.Append (Host_Address'(Get (Get (Arr, Ix))));
          end loop;
       end return;
    end Get;
+
+   function Create (Item : GNAT.Spitbol.Table_VString.Table_Entry) return GNATCOLL.JSON.JSON_Value is
+   begin
+      return raise Program_Error;
+   end Create;
+
 end Gprslaves.DB.JSON;

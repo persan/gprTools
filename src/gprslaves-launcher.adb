@@ -7,6 +7,8 @@ with Gprslaves.Configuration;
 use Gprslaves.Configuration;
 with Ada.Text_IO; use Ada.Text_IO;
 with Ada.Strings.Unbounded;
+with GNAT.OS_Lib;
+with Ada.Command_Line;
 
 procedure Gprslaves.Launcher is
    use Ada.Strings.Unbounded;
@@ -99,12 +101,17 @@ begin
    if Print_Help then
       Put_Line (Configuration.Command & " " & VERSION);
       Put_Line ("-DKey=Value             Defines a key/Value pair for matching");
-      Put_Line ("-n   --nameserver=URL   Defines a nameserver (default is read from file '~/.gprslaves').");
+      Put_Line ("-n   --nameserver=URL   Defines a nameserver (default is read from files ${PWD}/.gprslave '~/.gprslave').");
       Put_Line ("-h    -hostname=name    Defines to hostname to register.");
    elsif Print_Version then
       Put_Line (Configuration.Command & " " & VERSION);
    end if;
-   Trace_Log (1, Cmd & " " & Args);
-
-
+   declare
+      S_Args : GNAT.OS_Lib.Argument_List_Access := GNAT.OS_Lib.Argument_String_To_List (To_String (Args));
+      Ret    : Integer;
+   begin
+      Ret := GNAT.OS_Lib.Spawn (S (Cmd), S_Args.all);
+      Ada.Command_Line.Set_Exit_Status (Ada.Command_Line.Exit_Status (Ret));
+      GNAT.OS_Lib.Free (S_Args);
+   end;
 end Gprslaves.Launcher;
