@@ -1,34 +1,93 @@
-with Ada.Text_IO;
 with GNAT.Regpat;
 with GNAT.Case_Util;
 with GNAT.String_Split;
+with GNATCOLL.Templates;
+with GNAT.OS_Lib;
+with Ada.Strings.Fixed;
+with Ada.Directories;
+use Ada.Directories;
 package body Pkg2gpr is
    use Ada.Text_IO;
    use GNAT.Regpat;
    use GNAT.String_Split;
+   use Ada.Containers;
+   use GNAT.OS_Lib;
    --------------
    -- Read_Pkg --
    --------------
    Matcher    : constant GNAT.Regpat.Pattern_Matcher :=
-                  GNAT.Regpat.Compile ("^((\w+)=(\S+))" &
+                  GNAT.Regpat.Compile ("^((\w+)\s*=\s*(\S+))" &
                                                     "|(Name):(.+)" &
-                                         "|(Description):\s*(\S.+)" &
-                                         "|(URL):\s*(\S.+)" &
-                                         "|(Version):\s*(\S.+)" &
-                                         "|(Requires):\s*(\S.+)" &
-                                         "|(Requires.private):\s*(\S.+)" &
-                                         "|(Conflicts):\s*(\S.+)" &
-                                         "|(Cflags):\s*(\S.+)" &
-                                         "|(Libs):\s*(\S.+)" &
-                                         "|(Libs.private):\s*(\S.+)");
-   VarMatcher : GNAT.Regpat.Pattern_Matcher :=
-                  GNAT.Regpat.Compile ("${(\w+)}");
+                                         "|^(Description):\s*(\S.+)" &
+                                         "|^(URL):\s*(\S.+)" &
+                                         "|^(Version):\s*(\S.+)" &
+                                         "|^(Requires):\s*(\S.+)" &
+                                         "|^(Requires.private):\s*(\S.+)" &
+                                         "|^(Conflicts):\s*(\S.+)" &
+                                         "|^(Cflags):\s*(\S.+)" &
+                                         "|^(Libs):\s*(\S.+)" &
+                                         "|^(Libs.private):\s*(\S.+)");
+
+   function Linker_Options (Item : Descr) return String is
+      Ret : Unbounded_String;
+      function Is_Std (S : String) return Boolean is
+         use Ada.Strings.Fixed;
+      begin
+         if Index (S, "-L") = S'First then
+            if Item.Default_Libs.Contains (To_Unbounded_String (S (S'First + 2 .. S'Last))) then
+               return True;
+            end if;
+         end if;
+         return False;
+      end Is_Std;
+
+   begin
+      Append (Ret, "(");
+      for I in Item.Libs.First_Index ..  Item.Libs.Last_Index loop
+         if not Is_Std (To_String (Item.Libs.Element (Integer (I)))) then
+            Append (Ret, """");
+            Append (Ret, Item.Libs.Element (Integer (I)));
+            Append (Ret, """");
+            if I < Item.Libs.Last_Index then
+               Append (Ret, ", ");
+            end if;
+         end if;
+      end loop;
+      Append (Ret, ")");
+      return To_String (Ret);
+   end Linker_Options;
+
+
+   function Image (Item : String_Vectors.Vector) return String is
+      Ret : Unbounded_String;
+   begin
+      Append (Ret, "(");
+      for I in Item.First_Index ..  Item.Last_Index loop
+         Append (Ret, """");
+         Append (Ret, Item.Element (Integer (I)));
+         Append (Ret, """");
+         if I < Item.Last_Index then
+            Append (Ret, ", ");
+         end if;
+      end loop;
+      Append (Ret, ")");
+      return To_String (Ret);
+   end Image;
 
    procedure Read_Pkg (Item : in out Descr; From : String) is
 
       function Expand (Src : String) return String is
+         Vars   : GNATCOLL.Templates.Substitution_Array (1 .. Integer (Item.Variables.Length));
+         Cursor : Natural := 1;
       begin
-         return  Src;
+         for C in Item.Variables.Iterate loop
+            Vars (Cursor) := (Name  => new String'(To_String (String_Maps.Key (C))),
+                              Value => new String'(To_String (String_Maps.Element (C))));
+            Cursor := Cursor + 1;
+         end loop;
+         return Ret : constant String := GNATCOLL.Templates.Substitute (Src, Vars, Delimiter => '$', Recursive => True) do
+            GNATCOLL.Templates.Free (Vars);
+         end return;
       end Expand;
 
       function Expand (Src : String) return Unbounded_String is
@@ -53,14 +112,14 @@ package body Pkg2gpr is
       begin
          Match (Matcher, Data => L, Matches => Matches);
          if Matches (0) /= No_Match then
-            for I in Matches'Range loop
-               if Matches (I) /= No_Match then
-                  Put_Line
-                    (I'Img & "=> (" & Matches (I).First'Img & ","
-                     & Matches (I).Last'Img & ")" &
-                       L (Matches (I).First .. Matches (I).Last));
-               end if;
-            end loop;
+--              for I in Matches'Range loop
+--                 if Matches (I) /= No_Match then
+--                    Put_Line
+--                      (I'Img & "=> (" & Matches (I).First'Img & ","
+--                       & Matches (I).Last'Img & ")" &
+--                         L (Matches (I).First .. Matches (I).Last));
+--                 end if;
+--              end loop;
             if Matches (2) /= No_Match then -- Variable
                Item.Variables.Include
                  (Key      => To_Unbounded_String (L (Matches (2).First .. Matches (2).Last)),
@@ -92,6 +151,10 @@ package body Pkg2gpr is
 
       F : Ada.Text_IO.File_Type;
    begin
+      Item.Default_Include := Get_Include;
+      Item.Default_Libs    := Get_Libs;
+      Item.FName           := To_Unbounded_String (Base_Name (From));
+      Item.SrcFile         := To_Unbounded_String (From);
       Open (F, In_File, From);
       while not End_Of_File (F) loop
          Parse (Get_Line (F));
@@ -99,12 +162,12 @@ package body Pkg2gpr is
       Close (F);
    end Read_Pkg;
 
-   function Pkg2Ada_Name (Src : Unbounded_String) return String is
-      S      : constant String := To_String (Src);
-      Ret    : String (S'Range);
+
+   function Pkg2Ada_Name (Src : String) return String is
+      Ret    : String (Src'Range);
       Cursor : Natural := Ret'First;
    begin
-      for C of S  loop
+      for C of Src  loop
          if C in '0' .. '9' | 'a' .. 'z' | 'A' .. 'Z' | '_' then
             Ret (Cursor) := C;
             Cursor := Cursor + 1;
@@ -118,36 +181,175 @@ package body Pkg2gpr is
       end if;
       return Ret (Ret'First .. Cursor - 1);
    end Pkg2Ada_Name;
+   function Pkg2Ada_Name (Src : Unbounded_String) return String is
+   begin
+      return Pkg2Ada_Name (To_String (Src));
+   end Pkg2Ada_Name;
+
    ---------------
    -- Write_GPR --
    ---------------
-
    procedure Write_GPR (Item : Descr; To   : String) is
+      Outf : Ada.Text_IO.File_Type;
+   begin
+      Create (Outf, Out_File, To);
+      Item.Write_GPR (Outf);
+      Close (Outf);
+   end Write_GPR;
+
+   procedure Write_GPR (Item : Descr; Output  : Ada.Text_IO.File_Type) is
 
    begin
-      Put_Line (" < " & To & " >");
-      Put_Line (Standard_Output, "project " & Pkg2Ada_Name (Item.Name) & " is");
+
+      if Item.Requires.Length /= 0 then
+         for I in Item.Requires.First_Index ..  Item.Requires.Last_Index loop
+            declare
+               Name : constant String := To_String (Item.Requires.Element (Integer (I)));
+            begin
+               if Name'Length > 1 and then Name (Name'First) not in '<' | '>' | '=' | '0' .. '9' then
+                  Put (Output, "with """);
+                  Put (Output, Get_GPR (Name));
+                  Put_Line (Output, """;");
+               end if;
+            end;
+         end loop;
+      end if;
+      Put_Line (Output, "project " & Pkg2Ada_Name (Item.FName) & " is");
+      New_Line (Output);
+      Put_Line (Output, "  for Languages use (""C"");");
+      if Get_Source_Dirs (Item).Length /= 0 then
+         Put_Line (Output, "  For Source_Dirs use " & Image (Get_Source_Dirs (Item)) & ";");
+      end if;
+
+      if Length (Item.Name) /= 0 then
+         Put_Line (Output, "  Name := """ & To_String (Item.Name) & """;");
+      end if;
+
+      if Length (Item.SrcFile) /= 0 then
+         Put_Line (Output, "  SrcFile := """ & To_String (Item.SrcFile) & """;");
+      end if;
+
       if Length (Item.Description) /= 0 then
-         Put_Line (Standard_Output, "  Description := """ & To_String (Item.Description) & """;");
+         Put_Line (Output, "  Description := """ & To_String (Item.Description) & """;");
       end if;
       if Length (Item.URL) /= 0 then
-         Put_Line (Standard_Output, "  URL := """ & To_String (Item.URL) & """;");
+         Put_Line (Output, "  URL := """ & To_String (Item.URL) & """;");
       end if;
       if Length (Item.Version) /= 0 then
-         Put_Line (Standard_Output, "  Version := """ & To_String (Item.Version) & """;");
+         Put_Line (Output, "  Version := """ & To_String (Item.Version) & """;");
       end if;
-      Put_Line (Standard_Output, "end " & Pkg2Ada_Name (Item.Name) & ";");
+      Put_Line (Output, "  for Externally_Built use ""True"";");
+      if Item.Libs.Length /= 0 then
+         New_Line (Output);
+         Put_Line (Output, "  package Linker is");
+         Put_Line (Output, "     for Linker_Options use " & Linker_Options (Item) & ";");
+         Put_Line (Output, "  end Linker;");
+      end if;
+
+      Put_Line (Output, "end " & Pkg2Ada_Name (Item.FName) & ";");
    end Write_GPR;
+
+   function Get_Source_Dirs   (Item : Descr) return String_Vectors.Vector is
+      Temp : Unbounded_String;
+   begin
+      return Ret : String_Vectors.Vector do
+         for I of Item.Cflags loop
+            if Index (I, "-I") > 0 then
+               Temp := Unbounded_Slice (I, 3, Length (I));
+               if not Item.Default_Include.Contains (Temp) then
+                  Ret.Append (Temp);
+               end if;
+            end if;
+         end loop;
+      end return;
+   end Get_Source_Dirs;
 
    -------------
    -- Get_GPR --
    -------------
 
-   function Get_GPR (Item : Descr) return String is
-      Ret : String := Pkg2Ada_Name (Item.Name);
+   function Get_GPR (Item : String) return String is
+      Ret : String := Pkg2Ada_Name (Item);
    begin
       GNAT.Case_Util.To_Lower (Ret);
       return Ret & ".gpr";
    end Get_GPR;
+
+   function Get_GPR (Item : Descr) return String is
+   begin
+      return Get_GPR (To_String (Item.FName));
+   end Get_GPR;
+
+   function Get_Include (Cpp : String := "cpp") return String_Vectors.Vector is
+      Args         : GNAT.OS_Lib.Argument_List_Access := new GNAT.OS_Lib.Argument_List'
+        (new String'("-v"),
+         (new String'("/dev/null")));
+      Success      : Boolean;
+      Return_Code  : Integer;
+      F            : File_Type;
+      Ret          : String_Vectors.Vector;
+      Exe          : GNAT.OS_Lib.String_Access := GNAT.OS_Lib.Locate_Exec_On_Path (Cpp);
+   begin
+      GNAT.OS_Lib.Spawn (Exe.all, Args.all, "_dummy", Success, Return_Code);
+      Open (F, In_File, "_dummy");
+      while not End_Of_File (F) loop
+         declare
+            S : constant String := Ada.Strings.Fixed.Trim (Get_Line (F), Side => Ada.Strings.Both);
+         begin
+            if Exists (S) then
+               Ret.Append (To_Unbounded_String (GNAT.OS_Lib.Normalize_Pathname (S)));
+            end if;
+         end;
+      end loop;
+      Close (F);
+      Free (Exe);
+      Free (Args);
+      return Ret;
+   end Get_Include;
+
+   function Get_Libs (Gcc : String := "gcc") return String_Vectors.Vector is
+      Args         : GNAT.OS_Lib.Argument_List_Access := new GNAT.OS_Lib.Argument_List'
+        (new String'("-print-search-dirs"),
+         (new String'("/dev/null")));
+      Success      : Boolean;
+      Return_Code  : Integer;
+      F            : File_Type;
+      Ret          : String_Vectors.Vector;
+      Exe          : GNAT.OS_Lib.String_Access := GNAT.OS_Lib.Locate_Exec_On_Path (Gcc);
+      use Ada.Strings.Fixed;
+   begin
+      GNAT.OS_Lib.Spawn (Exe.all, Args.all, "_dummy", Success, Return_Code);
+      Open (F, In_File, "_dummy");
+
+      while not End_Of_File (F) loop
+         declare
+            S : constant String := Ada.Strings.Fixed.Trim (Get_Line (F), Side => Ada.Strings.Both);
+            F : GNAT.String_Split.Slice_Set;
+         begin
+            if Index (S, "libraries: =") > 0 then
+               GNAT.String_Split.Create (F, S (Index (S, "=") + 1 .. S'Last), ":");
+               for I in 1 .. GNAT.String_Split.Slice_Count (F) loop
+                  declare
+                     Name : constant String := GNAT.OS_Lib.Normalize_Pathname (GNAT.String_Split.Slice (F, I));
+                  begin
+                     if Exists (Name) then
+                        if not Ret.Contains (To_Unbounded_String (Name)) then
+                           Ret.Append (To_Unbounded_String (Name));
+                        end if;
+                     end if;
+
+                  end;
+
+
+               end loop;
+            end if;
+         end;
+      end loop;
+      Close (F);
+
+      Free (Exe);
+      Free (Args);
+      return Ret;
+   end Get_Libs;
 
 end Pkg2gpr;

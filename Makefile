@@ -36,6 +36,14 @@ install:
 test:compile
 	${MAKE} -C tests project=${project}
 
+test2:
+	gprbuild -Pgpr_tools.gpr pkg2gpr-main.adb -j0 -p
+	rm -rf tss
+	bin/pkg2gpr  /usr/share/pkgconfig/*.pc  -O tss
+	bin/pkg2gpr  /usr/lib64/pkgconfig/*.pc  -O tss
+	cd tss; for i in *.gpr; do gprbuild -P  $$i ; done
+
+
 
 dist:test
 	if [[ ! -z ` git status --porcelain`  ]] ; then \
