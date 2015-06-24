@@ -296,18 +296,20 @@ package body Pkg2gpr is
 
 
       Put_Line (Output, "   for Externally_Built use ""True"";");
+      New_Line (Output);
 
       Put_Line (Output, "   package Compiler is");
       if Item.Compiler_Default_Switches.Length > 0 then
          Put_Line (Output, "      for Default_Switches(""C"") use " & Image (Compiler_Default_Switches (Item)) & ";");
+         New_Line (Output);
       end if;
       for I of Item.Requires loop
          if Length (I) > 1 and then Element (I, 1) not in '<' | '>' | '=' | '0' .. '9' then
-            Put_Line (Output, "      for Default_Switches(""C"") use Compiler'Default_Switches(""C"") & " &
-                        Pkg2Ada_Name (I) & ".Compiler'Default_Switches(""C"");");
+            Put_Line (Output, "      for Default_Switches(""C"") use Compiler'Default_Switches(""C"") & ");
+            Put_Line (Output, "        " & Pkg2Ada_Name (I) & ".Compiler'Default_Switches(""C"");");
+            New_Line (Output);
          end if;
       end loop;
-
       Put_Line (Output, "   end Compiler;");
 
       if Item.Libs.Length /= 0 then
