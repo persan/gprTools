@@ -21,7 +21,7 @@ package body Gprslaves.Nameserver.Server is
    end Find;
 
    function Request (Request : AWS.Status.Data) return AWS.Response.Data is
-               Hosts : Host_Info_Vectors.Vector;
+      Hosts : Host_Info_Vectors.Vector;
    begin
       case AWS.Status.Method (Request) is
          when AWS.Status.PUT =>
