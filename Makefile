@@ -12,17 +12,10 @@ Makefile.config : Makefile  #IGNORE
 	@echo "export PATH=${CURDIR}/bin:${PATH}" >>$@
 	@echo "export GPR_PROJECT_PATH=${CURDIR}" >>$@
 
-soap:
-	rm -rf src/gen
-	mkdir -p src/gen
-	cd src/gen ;ada2wsdl -P ${project}.gpr gprslaves-nameserver.ads -f
-	rm -f `find -name "*.npp"`
-	cd src/gen ;wsdl2aws gprslaves-nameserver.ads.wsdl -f -main gprslaves-server -timeouts 1 -cb -spec gprslaves.nameserver
 pretty:
 	gnatpp -rf -P ${project}.gpr
+
 compile:
-	#${MAKE} soap
-	#m${MAKE} pretty
 	gprbuild  -s -p -P ${project}.gpr
 
 clean:
@@ -35,9 +28,6 @@ install:
 
 test:compile
 	${MAKE} -C tests project=${project}
-
-test2:
-	gprbuild -Pgpr_tools.gpr pkg2gpr-main.adb -j0 -p
 	rm -rf tss/*
 	bin/pkg2gpr  /usr/share/pkgconfig/*.pc  -O tss
 	bin/pkg2gpr  /usr/lib64/pkgconfig/*.pc  -O tss
