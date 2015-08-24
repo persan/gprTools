@@ -46,5 +46,5 @@ dist:test
 	git tag ${project}-$(shell bin/gprinfo --version) -f
 	git clone . ${project}-$(shell bin/gprinfo --version)
 	rm ${project}-$(shell bin/gprinfo --version)/.git -rf
-	tar -czf ${project}-$(shell bin/gprinfo --version).tgz $(basename ${project})-$(shell bin/gprinfo --version)
+	tar -czf ${project}-$(shell bin/gprinfo --version).tgz $(notdir ${project})-$(shell bin/gprinfo --version)
 	rm ${project}-$(shell bin/gprinfo --version) -rf
