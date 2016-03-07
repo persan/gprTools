@@ -1,5 +1,8 @@
 
+project?=$(dir ${CURDIR})gpr_tools.gpr
+export PATH:=$(dir ${CURDIR})bin:${PATH}
 test:
+	echo ${PATH}
 	gprinfo -P ${project} --languages >out/_language_list
 	@cmp out/_language_list golden/_language_list
 
@@ -27,3 +30,12 @@ test:
 	gprinfo -P  ag.gpr --attribute=Source_Dirs  >out/_agg_sourcdirs
 	gprinfo -P  ag.gpr --attribute=Object_Dir   >>out/_agg_sourcdirs
 	@cmp out/_agg_sourcdirs golden/_agg_sourcdirs
+
+	gprinfo -P  p5.gpr -r --contains-lang=c++ | sed "s#${CURDIR}/##" >out/_p5_c++
+	@cmp out/_p5_c++ golden/_p5_c++
+
+	gprinfo -P  p5.gpr -r --contains-lang=C | sed "s#${CURDIR}/##" >out/_p5_c
+	@cmp out/_p5_c golden/_p5_c
+
+	gprinfo -P  p5.gpr -r --contains-lang=ADA | sed "s#${CURDIR}/##" >out/_p5_ada
+	@cmp out/_p5_ada golden/_p5_ada

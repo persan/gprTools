@@ -2,8 +2,12 @@ gprTools
 ========
 Some handy commandline utilities for .gprfiles.
 
+Version: 1.4.3
+- Added option to cherry pick project containg lang
+
 Version: 1.4.2
 - Corrected packing
+
 Version: 1.4.1
 - Added command pkg2gpr A tool that generates .gpr-files from .pc files
    to simlplify use of  preinstalled sw.
@@ -46,5 +50,5 @@ The tool gprinfo displays various Attributes such as:
  - Imported projects
  - Missing imports.
  - Calculate buildorder for a .gpr project tree.
- the results could ether be echod to standard outup and in
+ the results could ether be echo:ed to standard outut and in
  some cases executed direct.

@@ -385,7 +385,7 @@ procedure Gprinfo is
       Put_Line ("--imports                    Print direct imports.");
       Put_Line ("--library-dir                Print library dir.");
       Put_Line ("--languages                  Print project languages.");
-      Put_Line ("--contains-lang=lang         Print projects containing languages lang.");
+      Put_Line ("--contains-lang=lang         Print projects containing languages lang (implies recursive)");
       Put_Line ("--gnatls={gnatls}            Use as gnatls default=>'" & Gnatls.all & "' .");
       Put_Line ("-r --recursive               Show recursive on all projects in tree in buildorder.");
       Put_Line ("--reverse                    Show recursive on all projects in tree in reverse buildorder.");
@@ -520,6 +520,7 @@ procedure Gprinfo is
                   Languages := True;
                elsif Full_Switch = "-contains-lang" then
                   Query_Languages := new String'(Parameter);
+                  Recursive  := True;
                elsif Full_Switch = "-gnatls" then
                   Gnatls :=  new String'(Parameter);
 
