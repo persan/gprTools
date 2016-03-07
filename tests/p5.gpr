@@ -1,0 +1,9 @@
+with "p1.gpr";
+with "p2.gpr";
+with "p3.gpr";
+with "p4.gpr";
+project p5 is
+  For Languages use ("Ada", "C++");
+  for object_Dir use ".obj/" & project'name;
+  for source_Dirs use ("src/p5");
+end p5;

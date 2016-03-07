@@ -1,4 +1,5 @@
 project p2 is
+  for Languages use ("Ada","c");
   for object_Dir use ".obj/" & project'name;
   for source_Dirs use ("src/p2");
 end p2;

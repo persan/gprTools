@@ -2,7 +2,7 @@ with "gnatcoll.gpr";
 with "aws.gpr";
 project GPR_Tools is
 
-   Version := "1.4.2";
+   Version := "1.4.3";
 
    for Languages use ("Ada", "Makefile", "Project File", "Text");
 
@@ -11,9 +11,9 @@ project GPR_Tools is
    for Exec_Dir use "bin";
    for Main use ("pkg2gpr-main.adb",
                  "gprinfo.adb",
---                   "gprslaves-get.adb",
---                   "gprslaves-launcher.adb",
---                   "gprslaves-server.adb",
+                 --                   "gprslaves-get.adb",
+                 --                   "gprslaves-launcher.adb",
+                 --                   "gprslaves-server.adb",
                  "gpradd.adb");
 
    package Builder is

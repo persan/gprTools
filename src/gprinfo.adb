@@ -94,7 +94,7 @@ procedure Gprinfo is
    Max_Iterations           : Positive := 1;
    Default_Max_Iterations   : constant := 16;
    Attribute                : GNAT.Strings.String_Access;
-
+   Query_Languages          : GNAT.Strings.String_Access;
    function Image (Item : String_Vectors.Vector) return String is
       Ret : Ada.Strings.Unbounded.Unbounded_String;
    begin
@@ -247,12 +247,9 @@ procedure Gprinfo is
    begin
       if Exclude_Externally_Built and then Equal_Case_Insensitive (P.Attribute_Value (Build ("", "externally_built")), "true") then
          return;
-      end if;
-
-      if Exclude_No_Source and then P.Direct_Sources_Count = 0 then
+      elsif Exclude_No_Source and then P.Direct_Sources_Count = 0 then
          return;
-      end if;
-      if Languages then
+      elsif Languages then
          for I of  P.Languages loop
             GNAT.IO.Put_Line (I.all);
          end loop;
@@ -306,7 +303,15 @@ procedure Gprinfo is
                           Continue  => Continue);
 
                else
-                  GNAT.IO.Put_Line (+Full_Name (Current (Iter).Project_Path));
+                  if Query_Languages = null then
+                     GNAT.IO.Put_Line (+Full_Name (Current (Iter).Project_Path));
+                  else
+                     for I of  Current (Iter).Languages loop
+                        if Ada.Strings.Fixed.Equal_Case_Insensitive (I.all, Query_Languages.all) then
+                           GNAT.IO.Put_Line (+Full_Name (Current (Iter).Project_Path));
+                        end if;
+                     end loop;
+                  end if;
                end if;
                Next (Iter);
             end loop;
@@ -339,12 +344,15 @@ procedure Gprinfo is
    end Handle_Error_Report;
 
    procedure Handle_Error_Report_Suppress_Warnings (Msg : String) is
-      Matcher  : constant GNAT.Regpat.Pattern_Matcher := Compile ("^(\w+\.gpr):\d+:\d+: warning: object directory .+");
+      Matcher  : constant GNAT.Regpat.Pattern_Matcher := Compile ("^(\w+\.gpr):\d+:\d+: warning: object directory ""(.+)"" not found");
       Matches  : GNAT.Regpat.Match_Array (1 .. GNAT.Regpat.Paren_Count (Matcher));
    begin
       Match (Matcher, Msg, Matches);
-      if Matches (1) = No_Match then
-         GNAT.IO.Put_Line (Msg (Matches (3).First .. Matches (3).Last));
+      if Matches (2) /= No_Match then
+         --  GNAT.IO.Put_Line (Msg (Matches (2).First .. Matches (2).Last));
+         null;
+      else
+         GNAT.IO.Put_Line (Msg);
       end if;
    end Handle_Error_Report_Suppress_Warnings;
 
@@ -377,6 +385,7 @@ procedure Gprinfo is
       Put_Line ("--imports                    Print direct imports.");
       Put_Line ("--library-dir                Print library dir.");
       Put_Line ("--languages                  Print project languages.");
+      Put_Line ("--contains-lang=lang         Print projects containing languages lang.");
       Put_Line ("--gnatls={gnatls}            Use as gnatls default=>'" & Gnatls.all & "' .");
       Put_Line ("-r --recursive               Show recursive on all projects in tree in buildorder.");
       Put_Line ("--reverse                    Show recursive on all projects in tree in reverse buildorder.");
@@ -415,6 +424,7 @@ procedure Gprinfo is
                            "-imports " &
                            "-library-dir " &
                            "-languages " &
+                           "-contains-lang= " &
                            "-gnatls= " &
                            "x? " &
                            "X! " &
@@ -508,6 +518,8 @@ procedure Gprinfo is
                   Library_Dir := True;
                elsif Full_Switch = "-languages" then
                   Languages := True;
+               elsif Full_Switch = "-contains-lang" then
+                  Query_Languages := new String'(Parameter);
                elsif Full_Switch = "-gnatls" then
                   Gnatls :=  new String'(Parameter);
 
@@ -637,6 +649,7 @@ begin
          end;
       end loop Load_Loop;
    else
+
       Proj.Load (Create (Filesystem_String (Project_File.all)), Env, Errors => Handle_Error_Report_Suppress_Warnings'Unrestricted_Access);
       if GPR_PROJECT_PATH_SUBPROCESS.Length /= 0 then
          GNAT.OS_Lib.Setenv ("GPR_PROJECT_PATH", Image (GPR_PROJECT_PATH_SUBPROCESS));

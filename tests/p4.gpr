@@ -1,4 +1,6 @@
+
 project p4 is
+  For Languages use ("Ada","C++");
   for object_Dir use ".obj/" & project'name;
   for source_Dirs use ("src/p4");
 end p4;
