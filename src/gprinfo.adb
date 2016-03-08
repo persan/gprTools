@@ -24,7 +24,7 @@ with GNATCOLL.Templates;
 with GNATCOLL.VFS;
 with Ada.Containers.Indefinite_Ordered_Sets;
 with GNAT.Directory_Operations;
-
+with GPR.Opt;
 procedure Gprinfo is
    use Ada.Containers;
    use Ada.Directories;
@@ -95,6 +95,7 @@ procedure Gprinfo is
    Default_Max_Iterations   : constant := 16;
    Attribute                : GNAT.Strings.String_Access;
    Query_Languages          : GNAT.Strings.String_Access;
+
    function Image (Item : String_Vectors.Vector) return String is
       Ret : Ada.Strings.Unbounded.Unbounded_String;
    begin
@@ -106,6 +107,7 @@ procedure Gprinfo is
       end loop;
       return Ada.Strings.Unbounded.To_String (Ret);
    end Image;
+
 
 
 
@@ -207,6 +209,7 @@ procedure Gprinfo is
       end;
       Search (".", "*.gpr", Process => Process'Access);
    end Locate_Proj;
+
 
    procedure Print_Attribute (P : Project_Type; Attribute : String) is
       Matcher : constant Pattern_Matcher := Compile ("((\w+)\.|)(\w+)(\((\w+)\)|)");
@@ -344,12 +347,12 @@ procedure Gprinfo is
    end Handle_Error_Report;
 
    procedure Handle_Error_Report_Suppress_Warnings (Msg : String) is
-      Matcher  : constant GNAT.Regpat.Pattern_Matcher := Compile ("^(\w+\.gpr):\d+:\d+: warning: object directory ""(.+)"" not found");
+      Matcher  : constant GNAT.Regpat.Pattern_Matcher := Compile ("^(\w+)\.gpr:\d+:\d+: warning: object directory ""(.+)"" not found");
       Matches  : GNAT.Regpat.Match_Array (1 .. GNAT.Regpat.Paren_Count (Matcher));
    begin
       Match (Matcher, Msg, Matches);
       if Matches (2) /= No_Match then
-         --  GNAT.IO.Put_Line (Msg (Matches (2).First .. Matches (2).Last));
+         --  GNAT.IO.Put_Line (Msg (Matches (1).First .. Matches (1).Last) & " " & Msg (Matches (2).First .. Matches (2).Last));
          null;
       else
          GNAT.IO.Put_Line (Msg);
@@ -650,8 +653,9 @@ begin
          end;
       end loop Load_Loop;
    else
-
+      GPR.Opt.Setup_Projects := True;
       Proj.Load (Create (Filesystem_String (Project_File.all)), Env, Errors => Handle_Error_Report_Suppress_Warnings'Unrestricted_Access);
+
       if GPR_PROJECT_PATH_SUBPROCESS.Length /= 0 then
          GNAT.OS_Lib.Setenv ("GPR_PROJECT_PATH", Image (GPR_PROJECT_PATH_SUBPROCESS));
       end if;
