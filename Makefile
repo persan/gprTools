@@ -34,8 +34,8 @@ test:compile
 	cd tss; for i in *.gpr; do gprbuild -P  $$i ; done
 
 
-
-dist:test
+dist: project:=$(notdir ${project})
+dist: test
 	if [[ ! -z ` git status --porcelain`  ]] ; then \
 		echo "Workfolder is not clean";\
 		git status ;\
@@ -46,5 +46,5 @@ dist:test
 	git tag ${project}-$(shell bin/gprinfo --version) -f
 	git clone . ${project}-$(shell bin/gprinfo --version)
 	rm ${project}-$(shell bin/gprinfo --version)/.git -rf
-	tar -czf ${project}-$(shell bin/gprinfo --version).tgz $(notdir ${project})-$(shell bin/gprinfo --version)
+	tar -czf ${project}-$(shell bin/gprinfo --version).tgz ${project}-$(shell bin/gprinfo --version)
 	rm ${project}-$(shell bin/gprinfo --version) -rf
