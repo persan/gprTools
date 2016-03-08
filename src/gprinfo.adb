@@ -69,33 +69,33 @@ procedure Gprinfo is
    Exclude_Patterns         : String_Vectors.Vector;
    Exclude_RTS              : Boolean := True;
 
-   Exec_Dir                 : Boolean := False;
-   GNAT_Version             : GNAT.Strings.String_Access;
-   Gnatls                   : GNAT.Strings.String_Access := new String'("gnatls");
-   Help                     : Boolean := False;
-   Languages                : Boolean := False;
-   Library_Dir              : Boolean := False;
-   Missing                  : Boolean := False;
-   Missing_Fail             : Boolean := False;
-   No_Duplicates            : Boolean := False;
-   Object_Dir               : Boolean := False;
-   Proj                     : Project_Tree;
-   Project_File             : GNAT.Strings.String_Access;
-   Recursive                : Boolean := False;
-   Rts_Root                 : GNAT.Strings.String_Access;
-   Show_Version             : Boolean := False;
-   Source_Dirs              : Boolean := False;
-   Source_Dirs_I            : Boolean := False;
-   Source_Files             : Boolean := False;
-   Verbose                  : Boolean := False;
-   Exit_Status              : Ada.Command_Line.Exit_Status := Ada.Command_Line.Success;
-   Reverse_Order            : Boolean := False;
-   Execute_Commands         : Boolean := False;
-   Max_Iterations           : Positive := 1;
-   Default_Max_Iterations   : constant := 16;
-   Attribute                : GNAT.Strings.String_Access;
-   Query_Languages          : GNAT.Strings.String_Access;
-
+   Exec_Dir                      : Boolean := False;
+   GNAT_Version                  : GNAT.Strings.String_Access;
+   Gnatls                        : GNAT.Strings.String_Access := new String'("gnatls");
+   Help                          : Boolean := False;
+   Languages                     : Boolean := False;
+   Library_Dir                   : Boolean := False;
+   Missing                       : Boolean := False;
+   Missing_Fail                  : Boolean := False;
+   No_Duplicates                 : Boolean := False;
+   Object_Dir                    : Boolean := False;
+   Proj                          : Project_Tree;
+   Project_File                  : GNAT.Strings.String_Access;
+   Recursive                     : Boolean := False;
+   Rts_Root                      : GNAT.Strings.String_Access;
+   Show_Version                  : Boolean := False;
+   Source_Dirs                   : Boolean := False;
+   Source_Dirs_I                 : Boolean := False;
+   Source_Files                  : Boolean := False;
+   Verbose                       : Boolean := False;
+   Exit_Status                   : Ada.Command_Line.Exit_Status := Ada.Command_Line.Success;
+   Reverse_Order                 : Boolean := False;
+   Execute_Commands              : Boolean := False;
+   Max_Iterations                : Positive := 1;
+   Default_Max_Iterations        : constant := 16;
+   Attribute                     : GNAT.Strings.String_Access;
+   Query_Languages               : GNAT.Strings.String_Access;
+   Reload_Project_After_Warnings : Boolean := True;
    function Image (Item : String_Vectors.Vector) return String is
       Ret : Ada.Strings.Unbounded.Unbounded_String;
    begin
@@ -352,8 +352,7 @@ procedure Gprinfo is
    begin
       Match (Matcher, Msg, Matches);
       if Matches (2) /= No_Match then
-         --  GNAT.IO.Put_Line (Msg (Matches (1).First .. Matches (1).Last) & " " & Msg (Matches (2).First .. Matches (2).Last));
-         null;
+         Reload_Project_After_Warnings := True;
       else
          GNAT.IO.Put_Line (Msg);
       end if;
@@ -654,8 +653,13 @@ begin
       end loop Load_Loop;
    else
       GPR.Opt.Setup_Projects := True;
-      Proj.Load (Create (Filesystem_String (Project_File.all)), Env, Errors => Handle_Error_Report_Suppress_Warnings'Unrestricted_Access);
+      GPR.Opt.Unchecked_Shared_Lib_Imports := True;
+      GPR.Opt.Full_Path_Name_For_Brief_Errors := True;
 
+      Proj.Load (Create (Filesystem_String (Project_File.all)), Env, Errors => Handle_Error_Report_Suppress_Warnings'Unrestricted_Access);
+      if Reload_Project_After_Warnings then
+         Proj.Load (Create (Filesystem_String (Project_File.all)), Env, Errors => Handle_Error_Report_Suppress_Warnings'Unrestricted_Access);
+      end if;
       if GPR_PROJECT_PATH_SUBPROCESS.Length /= 0 then
          GNAT.OS_Lib.Setenv ("GPR_PROJECT_PATH", Image (GPR_PROJECT_PATH_SUBPROCESS));
       end if;
