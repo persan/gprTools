@@ -5,7 +5,7 @@ with Ada.Directories;
 use Ada.Directories;
 with Ada.Command_Line;
 with Ada.Text_IO; use Ada.Text_IO;
-procedure Pkg2gpr.Main is
+procedure GPR_Tools.Pkg2gpr.Main is
    OutputFolder : aliased GNAT.Strings.String_Access := new String'(Ada.Directories.Current_Directory);
    Version      : constant String := $VERSION;
    Command_Name : constant String := Ada.Directories.Base_Name (Ada.Command_Line.Command_Name);
@@ -66,4 +66,4 @@ begin
 exception
    when Invalid_Switch    => Put_Line ("Invalid Switch " & Full_Switch);
    when Invalid_Parameter => Put_Line ("No parameter for " & Full_Switch);
-end Pkg2gpr.Main;
+end GPR_Tools.Pkg2gpr.Main;

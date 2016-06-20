@@ -8,7 +8,7 @@ with GNATCOLL.Projects;
 with GNATCOLL.VFS;
 with Ada.Directories;
 
-procedure Gpradd is
+procedure GPR_Tools.Gpradd is
 
    use GNATCOLL.VFS;
    use GNAT.Strings;
@@ -91,4 +91,4 @@ begin
    end;
 
    Unchecked_Free (New_Path);
-end Gpradd;
+end GPR_Tools.Gpradd;

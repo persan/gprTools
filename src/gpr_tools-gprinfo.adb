@@ -25,7 +25,7 @@ with GNATCOLL.VFS;
 with Ada.Containers.Indefinite_Ordered_Sets;
 with GNAT.Directory_Operations;
 with GPR.Opt;
-procedure Gprinfo is
+procedure GPR_Tools.Gprinfo is
    use Ada.Containers;
    use Ada.Directories;
    use Ada.Strings.Fixed;
@@ -700,4 +700,4 @@ begin
 exception
    when others =>
       Ada.Command_Line.Set_Exit_Status (Ada.Command_Line.Failure);
-end Gprinfo;
+end GPR_Tools.Gprinfo;

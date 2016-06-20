@@ -1,6 +1,6 @@
 with GNAT.Spitbol; use GNAT.Spitbol;
 with Interfaces; use Interfaces;
-package body Gprslaves.DB.JSON is
+package body GPR_Tools.Gprslaves.DB.JSON is
    use GNATCOLL.JSON;
    ------------
    -- Create --
@@ -113,4 +113,4 @@ package body Gprslaves.DB.JSON is
       return raise Program_Error;
    end Create;
 
-end Gprslaves.DB.JSON;
+end GPR_Tools.Gprslaves.DB.JSON;

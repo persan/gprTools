@@ -3,7 +3,7 @@ with Ada.Strings.Unbounded.Hash;
 with Ada.Containers.Vectors;
 with Ada.Containers.Hashed_Maps;
 with Ada.Text_IO;
-package Pkg2gpr is
+package GPR_Tools.Pkg2gpr is
 
    use Ada.Strings.Unbounded;
    package String_Vectors is new Ada.Containers.Vectors (Natural, Unbounded_String);
@@ -41,4 +41,4 @@ package Pkg2gpr is
    function Get_Libs (Gcc : String := "gcc") return String_Vectors.Vector;
    function Compiler_Default_Switches (Item : Descr) return String_Vectors.Vector;
 
-end Pkg2gpr;
+end GPR_Tools.Pkg2gpr;

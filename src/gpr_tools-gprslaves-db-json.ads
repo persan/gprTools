@@ -1,5 +1,5 @@
 with GNATCOLL.JSON;
-package Gprslaves.DB.JSON is
+package GPR_Tools.Gprslaves.DB.JSON is
 
    function Create (Item : Info_Struct) return GNATCOLL.JSON.JSON_Value;
    function Create (Item : Host_Address) return GNATCOLL.JSON.JSON_Value;
@@ -13,4 +13,4 @@ package Gprslaves.DB.JSON is
    function Get (Item : GNATCOLL.JSON.JSON_Value) return Host_Info_Vectors.Vector;
    function Get (Item : GNATCOLL.JSON.JSON_Value) return GNAT.Spitbol.Table_VString.Table_Entry;
 
-end Gprslaves.DB.JSON;
+end GPR_Tools.Gprslaves.DB.JSON;

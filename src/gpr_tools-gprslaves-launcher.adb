@@ -10,7 +10,7 @@ with Ada.Strings.Unbounded;
 with GNAT.OS_Lib;
 with Ada.Command_Line;
 
-procedure Gprslaves.Launcher is
+procedure GPR_Tools.Gprslaves.Launcher is
    use Ada.Strings.Unbounded;
    use GNAT.String_Split;
    use GNAT.Command_Line;
@@ -114,4 +114,4 @@ begin
       Ada.Command_Line.Set_Exit_Status (Ada.Command_Line.Exit_Status (Ret));
       GNAT.OS_Lib.Free (S_Args);
    end;
-end Gprslaves.Launcher;
+end GPR_Tools.Gprslaves.Launcher;

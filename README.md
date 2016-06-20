@@ -2,6 +2,9 @@ gprTools
 ========
 Some handy commandline utilities for .gprfiles.
 
+Version: 1.4.4
+- Restructure
+
 Version: 1.4.3
 - Added option to cherry pick project containg lang
 

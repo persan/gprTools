@@ -8,7 +8,7 @@ with Ada.Directories;
 use Ada.Directories;
 with Ada.Strings;
 with Ada.Strings.Maps; use Ada.Strings.Maps;
-package body Pkg2gpr is
+package body GPR_Tools.Pkg2gpr is
    use Ada.Text_IO;
    use GNAT.Regpat;
    use GNAT.String_Split;
@@ -21,7 +21,7 @@ package body Pkg2gpr is
    --------------
    Matcher    : constant GNAT.Regpat.Pattern_Matcher :=
                   GNAT.Regpat.Compile ("^((\w+)\s*=\s*(.*))" &
-                                         "|^(Name):(.+)" &
+                                                    "|^(Name):(.+)" &
                                          "|^(Description):\s*(\S.+)" &
                                          "|^(URL):\s*(\S.+)" &
                                          "|^(Version):\s*(\S.+)" &
@@ -115,7 +115,7 @@ package body Pkg2gpr is
       end Expand;
 
       function Expand (Src : String) return String_Vectors.Vector is
-         S : GNAT.String_Split.Slice_Set;
+         S    : GNAT.String_Split.Slice_Set;
          Temp : constant String := Trim (Src, To_Set ("""'"), To_Set ("""'"));
       begin
          return Ret : String_Vectors.Vector do
@@ -423,4 +423,4 @@ package body Pkg2gpr is
       return Ret;
    end Get_Libs;
 
-end Pkg2gpr;
+end GPR_Tools.Pkg2gpr;

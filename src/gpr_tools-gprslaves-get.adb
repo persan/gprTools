@@ -11,7 +11,7 @@ with GNAT.Spitbol; use GNAT.Spitbol;
 with GNAT.Spitbol.Table_VString; use GNAT.Spitbol.Table_VString;
 with Gprslaves.Configuration;
 use Gprslaves.Configuration;
-procedure Gprslaves.Get is
+procedure GPR_Tools.Gprslaves.Get is
    use GNAT.String_Split;
    use DB;
    procedure Put (Self : GNAT.Spitbol.Table_VString.Table) is

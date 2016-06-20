@@ -6,7 +6,7 @@ with GNATCOLL.Utils;
 with GNAT.OS_Lib; use GNAT.OS_Lib;
 use GNAT.Expect;
 with Ada.Unchecked_Deallocation;
-package body Gprslaves.DB is
+package body GPR_Tools.Gprslaves.DB is
    use GNAT.Spitbol.Table_VString;
    use type Ada.Strings.Unbounded.Unbounded_String;
    --------------
@@ -132,4 +132,4 @@ package body Gprslaves.DB is
    end Initialize;
 
 
-end Gprslaves.DB;
+end GPR_Tools.Gprslaves.DB;

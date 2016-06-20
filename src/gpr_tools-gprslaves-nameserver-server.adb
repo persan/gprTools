@@ -4,7 +4,7 @@ with Gprslaves.DB.JSON;
 with GNATCOLL.JSON;
 with AWS.Messages;
 with Gprslaves.DB; use Gprslaves.DB;
-package body Gprslaves.Nameserver.Server is
+package body GPR_Tools.Gprslaves.Nameserver.Server is
    Store : Gprslaves.DB.Table;
    --------------
    -- Register --
@@ -38,4 +38,4 @@ package body Gprslaves.Nameserver.Server is
          return AWS.Response.Build ("", "FAIL", Status_Code => AWS.Messages.S400);
    end Request;
 
-end Gprslaves.Nameserver.Server;
+end GPR_Tools.Gprslaves.Nameserver.Server;

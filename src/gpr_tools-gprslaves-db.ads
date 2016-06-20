@@ -1,7 +1,7 @@
 with GNAT.Sockets;
 with GNAT.Spitbol.Table_VString;
 with Ada.Containers.Vectors;
-package Gprslaves.DB is
+package GPR_Tools.Gprslaves.DB is
 
    type Host_Address is record
       Name : GNAT.Spitbol.VString;
@@ -24,7 +24,7 @@ package Gprslaves.DB is
                          HostName : String := GNAT.Sockets.Host_Name;
                          Port     : GNAT.Sockets.Port_Type := Get_Free_Port);
 
-   procedure Append (Self : in out Info_Struct;
+   procedure Append (Self      : in out Info_Struct;
                      Key_Name  : String;
                      Key_Value : String);
 
@@ -43,4 +43,4 @@ private
       Hosts : Host_Vectors.Vector;
    end record;
 
-end Gprslaves.DB;
+end GPR_Tools.Gprslaves.DB;

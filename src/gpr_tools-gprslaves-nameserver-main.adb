@@ -1,7 +1,7 @@
 with AWS.Server;
 with Gprslaves.Nameserver.Server;
 with AWS.Config;
-procedure Gprslaves.Nameserver.Main is
+procedure GPR_Tools.Gprslaves.Nameserver.Main is
    Web_Server : AWS.Server.HTTP;
    Config     : AWS.Config.Object;
 begin
@@ -9,4 +9,4 @@ begin
                      Callback => Server.Request'Access,
                      Config => Config);
 
-end Gprslaves.Nameserver.Main;
+end GPR_Tools.Gprslaves.Nameserver.Main;

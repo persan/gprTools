@@ -1,7 +1,7 @@
 with GNAT.Spitbol;
 with Ada.Directories;
 with Ada.Command_Line;
-package Gprslaves.Configuration is
+package GPR_Tools.Gprslaves.Configuration is
    use GNAT.Spitbol;
 
    Nameserver : VString := V (Default_Nameserver);
@@ -13,4 +13,4 @@ package Gprslaves.Configuration is
    procedure Trace_Log (Level : Verbose_Level; Message : VString);
    procedure Trace_Log (Level : Verbose_Level; Message : String);
 
-end Gprslaves.Configuration;
+end GPR_Tools.Gprslaves.Configuration;
