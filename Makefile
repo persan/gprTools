@@ -41,10 +41,6 @@ dist: test
 		git status ;\
 		exit -1;\
 	fi
-	rm -rf ${project}-$(shell bin/gprinfo --version) *.tgz
 
 	git tag ${project}-$(shell bin/gprinfo --version) -f
 	git clone . ${project}-$(shell bin/gprinfo --version)
-	rm ${project}-$(shell bin/gprinfo --version)/.git -rf
-	tar -czf ${project}-$(shell bin/gprinfo --version).tgz ${project}-$(shell bin/gprinfo --version)
-	rm ${project}-$(shell bin/gprinfo --version) -rf
