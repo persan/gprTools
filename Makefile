@@ -34,13 +34,13 @@ test:compile
 	cd tss; for i in *.gpr; do gprbuild -P  $$i ; done
 
 
-dist: project:=$(notdir ${project})
-dist: test
+tag: project:=$(notdir ${project})
+tag: test
 	if [[ ! -z ` git status --porcelain`  ]] ; then \
 		echo "Workfolder is not clean";\
 		git status ;\
 		exit -1;\
 	fi
-
-	git tag ${project}-$(shell bin/gprinfo --version) -f
-	git clone . ${project}-$(shell bin/gprinfo --version)
+	check_tag  ${project}-$(shell bin/gprinfo --version)
+	git tag . ${project}-$(shell bin/gprinfo --version)
+	git push -a
