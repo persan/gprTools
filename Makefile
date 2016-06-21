@@ -19,9 +19,7 @@ compile:
 	gprbuild  -s -p -P ${project}.gpr
 
 clean:
-	gprclean -P${project}.gpr
-	rm -rf Makefile.config gpr_tools-*
-	rm -rf `find * -name "*~"`
+	git clean -rf
 
 install:
 	gprinstall -f -v -p -P ${project}.gpr --mode=usage  --prefix=${DESTDIR}${PREFIX} -XDevelopment=False
@@ -29,8 +27,8 @@ install:
 test:compile
 	${MAKE} -C tests project=${project}
 	rm -rf tss/*
-	bin/pkg2gpr  /usr/share/pkgconfig/*.pc  -O tss
-	bin/pkg2gpr  /usr/lib64/pkgconfig/*.pc  -O tss
+	pkg2gpr  /usr/share/pkgconfig/*.pc  -O tss
+	pkg2gpr  /usr/lib64/pkgconfig/*.pc  -O tss
 	cd tss; for i in *.gpr; do gprbuild -P  $$i ; done
 
 
