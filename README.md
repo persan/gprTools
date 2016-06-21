@@ -2,7 +2,7 @@ gprTools
 ========
 Some handy commandline utilities for .gprfiles.
 
-Version: 1.4.4
+Version: 1.4.4 2016-06-21
 - Restructure
 
 Version: 1.4.3

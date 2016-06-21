@@ -17,11 +17,10 @@ pretty:
 
 compile:
 	gprbuild  -s -p -P ${project}.gpr
+	gprbuild  -s -p -P ${project}-util.gpr
 
 clean:
-	gprclean -P${project}.gpr
-	rm -rf Makefile.config gpr_tools-*
-	rm -rf `find * -name "*~"`
+	git clean -dfqx
 
 install:
 	gprinstall -f -v -p -P ${project}.gpr --mode=usage  --prefix=${DESTDIR}${PREFIX} -XDevelopment=False
@@ -29,18 +28,19 @@ install:
 test:compile
 	${MAKE} -C tests project=${project}
 	rm -rf tss/*
-	bin/pkg2gpr  /usr/share/pkgconfig/*.pc  -O tss
-	bin/pkg2gpr  /usr/lib64/pkgconfig/*.pc  -O tss
+	pkg2gpr  /usr/share/pkgconfig/*.pc  -O tss
+	pkg2gpr  /usr/lib64/pkgconfig/*.pc  -O tss
 	cd tss; for i in *.gpr; do gprbuild -P  $$i ; done
 
 
 tag: project:=$(notdir ${project})
 tag: test
+	check_version
 	if [[ ! -z ` git status --porcelain`  ]] ; then \
 		echo "Workfolder is not clean";\
 		git status ;\
 		exit -1;\
 	fi
-	check_tag  ${project}-$(shell bin/gprinfo --version)
-	git tag . ${project}-$(shell bin/gprinfo --version)
-	git push -a
+	check_tags  ${project}-v`check_version`
+	git tag -a ${project}-v`check_version` "-mAuto tag ${project}-v$(shell bin/gprinfo --version)"
+	git push --all
