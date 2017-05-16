@@ -23,7 +23,7 @@ clean:
 	git clean -dfqx
 
 install:
-	gprinstall -f -v -p -P ${project}.gpr --mode=usage  --prefix=${DESTDIR}${PREFIX} -XDevelopment=False
+	gprinstall -f -p -P ${project}.gpr --mode=usage  --prefix=${DESTDIR}${PREFIX} -XDevelopment=False
 
 test:compile
 	${MAKE} -C tests project=${project}
@@ -41,6 +41,7 @@ tag: test
 		git status ;\
 		exit -1;\
 	fi
-	check_tags  ${project}-v`check_version`
-	git tag -a ${project}-v`check_version` "-mAuto tag ${project}-v$(shell bin/gprinfo --version)"
+	check_tags  v`check_version`
+	git tag -a v`check_version` "-mAuto tag ${project}-v$(shell bin/gprinfo --version)"
 	git push --all
+	git push --tag

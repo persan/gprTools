@@ -25,6 +25,7 @@ with GNATCOLL.VFS;
 with Ada.Containers.Indefinite_Ordered_Sets;
 with GNAT.Directory_Operations;
 with GPR.Opt;
+with GNAT.Case_Util;
 procedure GPR_Tools.Gprinfo is
    use Ada.Containers;
    use Ada.Directories;
@@ -72,6 +73,7 @@ procedure GPR_Tools.Gprinfo is
    GNAT_Version                  : GNAT.Strings.String_Access;
    Gnatls                        : GNAT.Strings.String_Access := new String'("gnatls");
    Help                          : Boolean := False;
+   Is_Aggregate                  : Boolean := False;
    Languages                     : Boolean := False;
    Library_Dir                   : Boolean := False;
    Missing                       : Boolean := False;
@@ -95,9 +97,11 @@ procedure GPR_Tools.Gprinfo is
    Attribute                     : GNAT.Strings.String_Access;
    Query_Languages               : GNAT.Strings.String_Access;
    Reload_Project_After_Warnings : Boolean := True;
+
    function Image (Item : String_Vectors.Vector) return String is
       Ret : Ada.Strings.Unbounded.Unbounded_String;
    begin
+
       for I of Item loop
          if Ada.Strings.Unbounded.Length (Ret) /= 0 then
             Ada.Strings.Unbounded.Append (Ret, GNAT.OS_Lib.Path_Separator);
@@ -253,7 +257,12 @@ procedure GPR_Tools.Gprinfo is
          return;
       elsif Languages then
          for I of  P.Languages loop
-            GNAT.IO.Put_Line (I.all);
+            declare
+               Lang : String := I.all;
+            begin
+               GNAT.Case_Util.To_Mixed (Lang);
+               GNAT.IO.Put_Line (Lang);
+            end;
          end loop;
       elsif Attribute /= null then
          Print_Attribute (P, Attribute.all);
@@ -319,6 +328,12 @@ procedure GPR_Tools.Gprinfo is
             end loop;
 
          end;
+      elsif Is_Aggregate and Query_Languages /= null then
+         for I of  P.Languages loop
+            if Ada.Strings.Fixed.Equal_Case_Insensitive (I.all, Query_Languages.all) then
+               GNAT.IO.Put_Line (+Full_Name (P.Project_Path));
+            end if;
+         end loop;
       end if;
    end Display;
 
@@ -445,126 +460,126 @@ procedure GPR_Tools.Gprinfo is
                            "-exceptions " &
                            "? h -help");
          case Opt is
-            when ASCII.NUL => exit;
-            when 'P' =>
-               Project_File := new String'(Parameter);
-            when 'a' =>
-               if Full_Switch = "aP" then
-                  GPR_PROJECT_PATH_LOCAL.Append (new String'(Parameter));
-               else
-                  raise Program_Error with "invalid switch => '" & Full_Switch  & "'";
-               end if;
-            when 'A' =>
-               if Full_Switch = "Ap" then
-                  GPR_PROJECT_PATH_SUBPROCESS.Append (new String'(Parameter));
-               elsif Full_Switch = "AP" then
-                  GPR_PROJECT_PATH_LOCAL.Append (new String'(Parameter));
-                  GPR_PROJECT_PATH_SUBPROCESS.Append (new String'(Parameter));
-               else
-                  raise Program_Error with "invalid switch => '" & Full_Switch  & "'";
-               end if;
-            when 'm' =>
-               Missing := True;
-            when 'M' =>
-               Missing_Fail := True;
-            when 'r' =>
-               Recursive  := True;
-            when 'v' =>
-               Show_Version  := True;
-            when 'x' =>
-               if Parameter'Length = 0 then
-                  Max_Iterations := Default_Max_Iterations;
-               else
-                  Max_Iterations := Integer'Value (Parameter);
-               end if;
-            when 'X' =>
-               declare
-                  S : GNAT.String_Split.Slice_Set; use GNAT.String_Split;
-               begin
-                  Create (S, Parameter, "=");
-                  if Slice_Count (S) = 2 then
-                     Change_Environment (Env.all, Slice (S, 1), Slice (S, 2));
-                  else
-                     Put_Line ("Invalid argument for ""-X"" """ & Parameter & """.");
-                     Help := True;
-                  end if;
-               end;
-            when '?' | 'h' =>
-               Help := True;
-            when '-' =>
-               if Full_Switch = "-dirname" then
-                  DirName := True;
-               elsif Full_Switch = "-basename" then
-                  BaseName := True;
-               elsif Full_Switch = "-missing" then
-                  Missing := True;
-               elsif Full_Switch = "-Missing" then
-                  Missing := True;
-                  Missing_Fail := True;
-               elsif Full_Switch = "-object-dir" then
-                  Object_Dir := True;
-               elsif Full_Switch = "-object-dir" then
-                  Object_Dir := True;
-               elsif Full_Switch = "-source-dirs" then
-                  Source_Dirs := True;
-               elsif Full_Switch = "-source-dirs-include" then
-                  Source_Dirs_I := True;
-               elsif Full_Switch = "-source-files" then
-                  Source_Files := True;
-               elsif Full_Switch = "-imports" then
-                  Direct_Imports := True;
-               elsif Full_Switch = "-exec-dir" then
-                  Exec_Dir := True;
-               elsif Full_Switch = "-library-dir" then
-                  Library_Dir := True;
-               elsif Full_Switch = "-languages" then
-                  Languages := True;
-               elsif Full_Switch = "-contains-lang" then
-                  Query_Languages := new String'(Parameter);
-                  Recursive  := True;
-               elsif Full_Switch = "-gnatls" then
-                  Gnatls :=  new String'(Parameter);
-
-               elsif Full_Switch = "-reverse" then
-                  Recursive := True;
-                  Reverse_Order := True;
-               elsif Full_Switch = "-recursive" then
-                  Recursive := True;
-
-               elsif Full_Switch = "-cwd" then
-                  Cwd := True;
-               elsif Full_Switch = "-echo" then
-                  Commands.Append ((Do_Echo, new String'(Parameter)));
-               elsif Full_Switch = "-exec" then
-                  Commands.Append ((Do_Exec, new String'(Parameter)));
-                  Execute_Commands := True;
-               elsif Full_Switch = "-rts" then
-                  Exclude_RTS := False;
-               elsif Full_Switch = "-externally-built" then
-                  Exclude_Externally_Built := False;
-               elsif Full_Switch = "-empty-sources" then
-                  Exclude_No_Source := False;
-               elsif Full_Switch = "-exclude-pattern" then
-                  Exclude_Patterns.Append (new String'(Parameter));
-               elsif Full_Switch = "-no-duplicates" then
-                  No_Duplicates := True;
-               elsif Full_Switch = "-version" then
-                  Show_Version := True;
-               elsif Full_Switch = "-verbose" then
-                  Verbose := True;
-               elsif Full_Switch = "-attribute" then
-                  Attribute := new String'(Parameter);
-               elsif Full_Switch = "-exceptions" then
-                  GNAT.Exception_Traces.Set_Trace_Decorator (GNAT.Traceback.Symbolic.Symbolic_Traceback'Access);
-                  GNAT.Exception_Traces.Trace_On (GNAT.Exception_Traces.Every_Raise);
-
-               elsif Full_Switch = "-help" then
-                  Help := True;
-               else
-                  raise Program_Error with "invalid switch => '" & Full_Switch  & "'";
-               end if;
-            when others =>
+         when ASCII.NUL => exit;
+         when 'P' =>
+            Project_File := new String'(Parameter);
+         when 'a' =>
+            if Full_Switch = "aP" then
+               GPR_PROJECT_PATH_LOCAL.Append (new String'(Parameter));
+            else
                raise Program_Error with "invalid switch => '" & Full_Switch  & "'";
+            end if;
+         when 'A' =>
+            if Full_Switch = "Ap" then
+               GPR_PROJECT_PATH_SUBPROCESS.Append (new String'(Parameter));
+            elsif Full_Switch = "AP" then
+               GPR_PROJECT_PATH_LOCAL.Append (new String'(Parameter));
+               GPR_PROJECT_PATH_SUBPROCESS.Append (new String'(Parameter));
+            else
+               raise Program_Error with "invalid switch => '" & Full_Switch  & "'";
+            end if;
+         when 'm' =>
+            Missing := True;
+         when 'M' =>
+            Missing_Fail := True;
+         when 'r' =>
+            Recursive  := True;
+         when 'v' =>
+            Show_Version  := True;
+         when 'x' =>
+            if Parameter'Length = 0 then
+               Max_Iterations := Default_Max_Iterations;
+            else
+               Max_Iterations := Integer'Value (Parameter);
+            end if;
+         when 'X' =>
+            declare
+               S : GNAT.String_Split.Slice_Set; use GNAT.String_Split;
+            begin
+               Create (S, Parameter, "=");
+               if Slice_Count (S) = 2 then
+                  Change_Environment (Env.all, Slice (S, 1), Slice (S, 2));
+               else
+                  Put_Line ("Invalid argument for ""-X"" """ & Parameter & """.");
+                  Help := True;
+               end if;
+            end;
+         when '?' | 'h' =>
+            Help := True;
+         when '-' =>
+            if Full_Switch = "-dirname" then
+               DirName := True;
+            elsif Full_Switch = "-basename" then
+               BaseName := True;
+            elsif Full_Switch = "-missing" then
+               Missing := True;
+            elsif Full_Switch = "-Missing" then
+               Missing := True;
+               Missing_Fail := True;
+            elsif Full_Switch = "-object-dir" then
+               Object_Dir := True;
+            elsif Full_Switch = "-object-dir" then
+               Object_Dir := True;
+            elsif Full_Switch = "-source-dirs" then
+               Source_Dirs := True;
+            elsif Full_Switch = "-source-dirs-include" then
+               Source_Dirs_I := True;
+            elsif Full_Switch = "-source-files" then
+               Source_Files := True;
+            elsif Full_Switch = "-imports" then
+               Direct_Imports := True;
+            elsif Full_Switch = "-exec-dir" then
+               Exec_Dir := True;
+            elsif Full_Switch = "-library-dir" then
+               Library_Dir := True;
+            elsif Full_Switch = "-languages" then
+               Languages := True;
+            elsif Full_Switch = "-contains-lang" then
+               Query_Languages := new String'(Parameter);
+               Recursive  := True;
+            elsif Full_Switch = "-gnatls" then
+               Gnatls :=  new String'(Parameter);
+
+            elsif Full_Switch = "-reverse" then
+               Recursive := True;
+               Reverse_Order := True;
+            elsif Full_Switch = "-recursive" then
+               Recursive := True;
+
+            elsif Full_Switch = "-cwd" then
+               Cwd := True;
+            elsif Full_Switch = "-echo" then
+               Commands.Append ((Do_Echo, new String'(Parameter)));
+            elsif Full_Switch = "-exec" then
+               Commands.Append ((Do_Exec, new String'(Parameter)));
+               Execute_Commands := True;
+            elsif Full_Switch = "-rts" then
+               Exclude_RTS := False;
+            elsif Full_Switch = "-externally-built" then
+               Exclude_Externally_Built := False;
+            elsif Full_Switch = "-empty-sources" then
+               Exclude_No_Source := False;
+            elsif Full_Switch = "-exclude-pattern" then
+               Exclude_Patterns.Append (new String'(Parameter));
+            elsif Full_Switch = "-no-duplicates" then
+               No_Duplicates := True;
+            elsif Full_Switch = "-version" then
+               Show_Version := True;
+            elsif Full_Switch = "-verbose" then
+               Verbose := True;
+            elsif Full_Switch = "-attribute" then
+               Attribute := new String'(Parameter);
+            elsif Full_Switch = "-exceptions" then
+               GNAT.Exception_Traces.Set_Trace_Decorator (GNAT.Traceback.Symbolic.Symbolic_Traceback'Access);
+               GNAT.Exception_Traces.Trace_On (GNAT.Exception_Traces.Every_Raise);
+
+            elsif Full_Switch = "-help" then
+               Help := True;
+            else
+               raise Program_Error with "invalid switch => '" & Full_Switch  & "'";
+            end if;
+         when others =>
+            raise Program_Error with "invalid switch => '" & Full_Switch  & "'";
          end case;
       end loop;
    exception
@@ -582,7 +597,7 @@ begin
       Print_Help;
       return;
    elsif Show_Version then
-      GNAT.IO.Put_Line (Version);
+      GNAT.IO.Put_Line (VERSION);
       return;
    end if;
 
@@ -665,6 +680,7 @@ begin
 
       if Proj.Root_Project.Is_Aggregate_Project or Proj.Root_Project.Is_Aggregate_Library then
          Recursive := False;
+         Is_Aggregate := True;
          declare
             Projects : String_Sets.Set;
 
