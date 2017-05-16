@@ -263,7 +263,7 @@ procedure GPR_Tools.Gprinfo is
             GNAT.IO.Put_Line ((if Source_Dirs_I then "-I " else "") & (+Full_Name (I)));
          end loop;
       elsif Source_Files then
-         for I of  P.Source_Files (Recursive).all loop
+         for I of  GNATCOLL.VFS.File_Array_Access'(P.Source_Files (Recursive)).all loop
             GNAT.IO.Put_Line (+Full_Name (I));
          end loop;
       elsif Object_Dir then
@@ -471,7 +471,7 @@ procedure GPR_Tools.Gprinfo is
             when 'r' =>
                Recursive  := True;
             when 'v' =>
-               Recursive  := True;
+               Show_Version  := True;
             when 'x' =>
                if Parameter'Length = 0 then
                   Max_Iterations := Default_Max_Iterations;

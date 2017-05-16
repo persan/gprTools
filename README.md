@@ -2,6 +2,10 @@ gprTools
 ========
 Some handy commandline utilities for .gprfiles.
 
+Version: 1.4.5 2017-05-16
+- Restructure
+- Compiles with GNAT 18.x
+
 Version: 1.4.4 2016-06-21
 - Restructure
 
