@@ -50,7 +50,7 @@ begin
       if not VERSION_OK then
          Put_Line (Standard_Error, "README.md:1: Version missmatch " & GPR_Tools.VERSION & " not found");
       elsif not DATE_OK then
-         Put_Line (Standard_Error, "README.md:1: Date missmatch: " & Image (Clock, ISO_Date) & " not Found");
+         Put_Line (Standard_Error, "README.md:1: Date missmatch: " & Image (Clock, ISO_Date) & " not Found for " & GPR_Tools.VERSION);
       end if;
    end if;
    Close (F);

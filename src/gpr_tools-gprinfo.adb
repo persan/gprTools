@@ -55,7 +55,6 @@ procedure GPR_Tools.Gprinfo is
 
    GPR_PROJECT_PATH_LOCAL      : String_Vectors.Vector;
    GPR_PROJECT_PATH_SUBPROCESS : String_Vectors.Vector;
-   Version                     : constant String := $VERSION;
    BaseName                    : Boolean := False;
    Commands                    : Command_Vectors.Vector;
    Cwd                         : Boolean := False;
