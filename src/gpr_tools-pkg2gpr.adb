@@ -117,6 +117,18 @@ package body GPR_Tools.Pkg2gpr is
       function Expand (Src : String) return String_Vectors.Vector is
          S    : GNAT.String_Split.Slice_Set;
          Temp : constant String := Trim (Src, To_Set ("""'"), To_Set ("""'"));
+         function Strip_Quotes (S : Unbounded_String) return Unbounded_String is
+            Ret : Unbounded_String;
+            C   : Character;
+         begin
+            for Ix  in 1 ..  Length (S) loop
+               C := Element (S, Ix);
+               if C not in ''' | '"' | '#' then
+                  Append (Ret, C);
+               end if;
+            end loop;
+            return Ret;
+         end Strip_Quotes;
       begin
          return Ret : String_Vectors.Vector do
             GNAT.String_Split.Create (S, Expand (Temp), " ,");
@@ -125,7 +137,7 @@ package body GPR_Tools.Pkg2gpr is
                   Name : constant Unbounded_String := Expand (GNAT.String_Split.Slice (S, I));
                begin
                   if Length (Name) > 0 then
-                     Ret.Append (Name);
+                     Ret.Append (Strip_Quotes (Name));
                   end if;
                end;
             end loop;
