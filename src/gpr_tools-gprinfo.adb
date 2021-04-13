@@ -339,7 +339,7 @@ procedure GPR_Tools.Gprinfo is
 
 
    procedure Handle_Error_Report (Msg : String) is
-      Matcher  : constant GNAT.Regpat.Pattern_Matcher := Compile ("^((\w+\.gpr):\d+:\d+: unknown project file: ""(.+)"")");
+      Matcher  : constant GNAT.Regpat.Pattern_Matcher := Compile ("^((\w+\.gpr):\d+:\d+: (unknown project file:|imported project file) ""(.+)"")");
       Matches  : GNAT.Regpat.Match_Array (1 .. GNAT.Regpat.Paren_Count (Matcher));
       Continue : Boolean;
    begin
@@ -349,13 +349,13 @@ procedure GPR_Tools.Gprinfo is
             Exit_Status := Ada.Command_Line.Failure;
          end if;
          if Commands.Length /= 0  then
-            Output (Full_Name => Msg (Matches (3).First .. Matches (3).Last),
+            Output (Full_Name => Msg (Matches (4).First .. Matches (4).Last),
                     Base_Name => Msg (Matches (2).First .. Matches (2).Last),
-                    Dir_Name  => Msg (Matches (3).First .. Matches (3).Last),
-                    Name      => Msg (Matches (3).First .. Matches (3).Last),
+                    Dir_Name  => Msg (Matches (4).First .. Matches (4).Last),
+                    Name      => Msg (Matches (4).First .. Matches (4).Last),
                     Continue  => Continue);
          else
-            GNAT.IO.Put_Line (Msg (Matches (3).First .. Matches (3).Last));
+            GNAT.IO.Put_Line (Msg (Matches (4).First .. Matches (4).Last));
          end if;
       end if;
    end Handle_Error_Report;
@@ -405,8 +405,8 @@ procedure GPR_Tools.Gprinfo is
       Put_Line ("--gnatls={gnatls}            Use as gnatls default=>'" & Gnatls.all & "' .");
       Put_Line ("-r --recursive               Show recursive on all projects in tree in buildorder.");
       Put_Line ("--reverse                    Show recursive on all projects in tree in reverse buildorder.");
-      Put_Line ("--echo=""command line""      Echo the argument with substitution %full_name %base_Name %dir_name %name.");
-      Put_Line ("--exec=""command line""      Execute the argument with substitution %full_name %base_Name %dir_name %name.");
+      Put_Line ("--echo=""command line""        Echo the argument with substitution %full_name %base_Name %dir_name %name.");
+      Put_Line ("--exec=""command line""        Execute the argument with substitution %full_name %base_Name %dir_name %name.");
       Put_Line ("--cwd                        Change dir to projects enclosing dir before executing command.");
       Put_Line ("--rts                        Include projects from runtimes.");
       Put_Line ("--externally-built           Include externally built procjects.");
@@ -666,7 +666,8 @@ begin
          end;
       end loop Load_Loop;
    else
-      GPR.Opt.Setup_Projects := True;
+      GPR.Opt.Create_Dirs := GPR.Opt.Create_All_Dirs;
+      null;
       GPR.Opt.Unchecked_Shared_Lib_Imports := True;
       GPR.Opt.Full_Path_Name_For_Brief_Errors := True;
 

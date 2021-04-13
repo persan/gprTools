@@ -2,8 +2,12 @@ gprTools
 ========
 Some handy commandline utilities for .gprfiles.
 
+Version: 2.0.1 2021-04-13
+- update to be compatible with gprbuild 22.x
+
 Version: 1.4.6 2017-05-16
 - Handle language query for aggregate projects.
+
 Version: 1.4.5 2017-05-16
 - Restructure
 - Compiles with GNAT 18.x

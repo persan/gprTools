@@ -32,6 +32,8 @@ test:compile
 	pkg2gpr  /usr/lib64/pkgconfig/*.pc  -O tss
 	cd tss; for i in *.gpr; do gprbuild -P  $$i ; done
 
+bash:
+	bash
 
 tag: project:=$(notdir ${project})
 tag: test
