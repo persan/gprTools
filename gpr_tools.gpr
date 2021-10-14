@@ -2,7 +2,7 @@ with "gnatcoll.gpr";
 with "aws.gpr";
 project GPR_Tools is
 
-   Version := "2.0.2";
+   Version := "2.0.3";
 
    for Languages use ("Ada", "Makefile", "Project File", "Text");
 
@@ -49,8 +49,8 @@ project GPR_Tools is
       for Implementation_Suffix ("Python") use ".py";
       for Specification_Suffix ("Text") use ".txt";
       for Specification_Exceptions ("Text") use ("README.md");
-      for Specification_Suffix ("Makefile") use ".mk";
-      for Specification_Exceptions ("Makefile") use ("Makefile");
+      for Implementation_Suffix ("Makefile") use ".mk";
+      for Implementation_Exceptions ("Makefile") use ("Makefile");
    end Naming;
 
 end GPR_Tools;

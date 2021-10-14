@@ -2,6 +2,9 @@ gprTools
 ========
 Some handy commandline utilities for .gprfiles.
 
+Version: 2.0.3 2021-10-14
+- Use impelmentation-(suffix/exceptions) for makefiles in gpr files.
+
 Version: 2.0.2 2021-04-13
 - Handle extra " in .pc files.
 
