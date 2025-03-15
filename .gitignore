@@ -12,3 +12,4 @@ tss
 **/_*
 **/gpsauto.cgpr
 **/*-loc.xml
+.clang*
